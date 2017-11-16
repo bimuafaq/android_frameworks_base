@@ -273,8 +273,9 @@
     <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
 
     <!-- Permission to allow rebooting the device after a user configurable amount of time -->
+    <!-- Reboot tile -->
     <uses-permission android:name="android.permission.REBOOT" />
-
+    <uses-permission android:name="android.permission.RECOVERY" />
 
     <protected-broadcast android:name="com.android.settingslib.action.REGISTER_SLICE_RECEIVER" />
     <protected-broadcast android:name="com.android.settingslib.action.UNREGISTER_SLICE_RECEIVER" />
