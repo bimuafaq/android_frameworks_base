@@ -16,6 +16,7 @@ package com.android.systemui.statusbar.phone;
 
 import android.annotation.Nullable;
 import android.content.Context;
+import android.os.SystemProperties;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
@@ -85,6 +86,11 @@ public class ReverseLinearLayout extends LinearLayout {
     private void updateOrder() {
         boolean isLayoutRtl = getLayoutDirection() == LAYOUT_DIRECTION_RTL;
         boolean isLayoutReverse = isLayoutRtl ^ mIsAlternativeOrder;
+
+        boolean isSeascapeDisabled = SystemProperties.getBoolean("persist.ui.seascape.disable", false);
+        if (isSeascapeDisabled) {
+            isLayoutReverse = isLayoutRtl ^ true;
+        }
 
         if (mIsLayoutReverse != isLayoutReverse) {
             // reversity changed, swap the order of all views.
