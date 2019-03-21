@@ -181,15 +181,7 @@ public class FingerprintService extends BiometricServiceBase {
 
         @Override
         public int handleFailedAttempt() {
-            final int currentUser = ActivityManager.getCurrentUser();
-            mFailedAttempts.put(currentUser, mFailedAttempts.get(currentUser, 0) + 1);
-            mTimedLockoutCleared.put(ActivityManager.getCurrentUser(), false);
-
-            if (getLockoutMode() != AuthenticationClient.LOCKOUT_NONE) {
-                scheduleLockoutResetForUser(currentUser);
-            }
-
-            return super.handleFailedAttempt();
+            return AuthenticationClient.LOCKOUT_NONE;
         }
 
         boolean isDetectOnly() {
@@ -1067,15 +1059,6 @@ public class FingerprintService extends BiometricServiceBase {
 
     @Override
     protected int getLockoutMode() {
-        final int currentUser = ActivityManager.getCurrentUser();
-        final int failedAttempts = mFailedAttempts.get(currentUser, 0);
-        if (failedAttempts >= MAX_FAILED_ATTEMPTS_LOCKOUT_PERMANENT) {
-            return AuthenticationClient.LOCKOUT_PERMANENT;
-        } else if (failedAttempts > 0
-                && !mTimedLockoutCleared.get(currentUser, false)
-                && (failedAttempts % MAX_FAILED_ATTEMPTS_LOCKOUT_TIMED == 0)) {
-            return AuthenticationClient.LOCKOUT_TIMED;
-        }
         return AuthenticationClient.LOCKOUT_NONE;
     }
 
