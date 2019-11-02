@@ -115,9 +115,9 @@
     <string name="keyguard_carrier_name_with_sim_locked_template" translatable="false"><xliff:g id="carrier">%s</xliff:g> (<xliff:g id="message">%s</xliff:g>)</string>
 
     <!-- Time format strings for fall-back clock widget -->
-    <string name="keyguard_widget_12_hours_format" translatable="false">h:mm</string>
+    <string name="keyguard_widget_12_hours_format" translatable="false">hh:mm</string>
     <!-- Time format strings for fall-back clock widget -->
-    <string name="keyguard_widget_24_hours_format" translatable="false">kk:mm</string>
+    <string name="keyguard_widget_24_hours_format" translatable="false">HH:mm</string>
     <!-- The character used in keyguard_widget_12_hours_format and keyguard_widget_24_hours_format
          to represent a ":". -->
     <string name="keyguard_fancy_colon" translatable="false"></string>

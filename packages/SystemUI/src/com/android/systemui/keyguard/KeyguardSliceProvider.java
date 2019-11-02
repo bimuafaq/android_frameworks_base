@@ -95,7 +95,7 @@ public class KeyguardSliceProvider extends SliceProvider implements
      * Only show alarms that will ring within N hours.
      */
     @VisibleForTesting
-    static final int ALARM_VISIBILITY_HOURS = 12;
+    static final int ALARM_VISIBILITY_HOURS = 24;
 
     private static final Object sInstanceLock = new Object();
     private static KeyguardSliceProvider sInstance;
@@ -304,7 +304,10 @@ public class KeyguardSliceProvider extends SliceProvider implements
             if (oldInstance != null) {
                 oldInstance.onDestroy();
             }
-            mDatePattern = getContext().getString(R.string.system_ui_aod_date_pattern);
+            boolean isNextAlarmPresent = withinNHoursLocked(mNextAlarmInfo, ALARM_VISIBILITY_HOURS);
+            mDatePattern = getContext().getString(isNextAlarmPresent
+                ? R.string.abbrev_wday_month_day_no_year_alarm
+                : R.string.abbrev_wday_month_day_no_year);
             mPendingIntent = PendingIntent.getActivity(getContext(), 0,
                     new Intent(getContext(), KeyguardSliceProvider.class), 0);
             mMediaManager.addCallback(this);
@@ -355,14 +358,17 @@ public class KeyguardSliceProvider extends SliceProvider implements
         synchronized (this) {
             if (withinNHoursLocked(mNextAlarmInfo, ALARM_VISIBILITY_HOURS)) {
                 String pattern = android.text.format.DateFormat.is24HourFormat(getContext(),
-                        ActivityManager.getCurrentUser()) ? "HH:mm" : "h:mm";
+                        ActivityManager.getCurrentUser()) ? "E HH:mm" : "E hh:mm";
                 mNextAlarm = android.text.format.DateFormat.format(pattern,
                         mNextAlarmInfo.getTriggerTime()).toString();
+                mDatePattern = getContext().getString(R.string.abbrev_wday_month_day_no_year_alarm);
             } else {
                 mNextAlarm = "";
+                mDatePattern = getContext().getString(R.string.abbrev_wday_month_day_no_year);
             }
         }
         notifyChange();
+        updateClockLocked();
     }
 
     private boolean withinNHoursLocked(AlarmManager.AlarmClockInfo alarmClockInfo, int hours) {
@@ -411,12 +417,10 @@ public class KeyguardSliceProvider extends SliceProvider implements
     }
 
     protected String getFormattedDateLocked() {
-        if (mDateFormat == null) {
-            final Locale l = Locale.getDefault();
-            DateFormat format = DateFormat.getInstanceForSkeleton(mDatePattern, l);
-            format.setContext(DisplayContext.CAPITALIZATION_FOR_STANDALONE);
-            mDateFormat = format;
-        }
+        final Locale l = Locale.getDefault();
+        DateFormat format = DateFormat.getInstanceForSkeleton(mDatePattern, l);
+        format.setContext(DisplayContext.CAPITALIZATION_FOR_STANDALONE);
+        mDateFormat = format;
         mCurrentTime.setTime(System.currentTimeMillis());
         return mDateFormat.format(mCurrentTime);
     }
