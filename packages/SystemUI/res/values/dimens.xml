@@ -784,7 +784,7 @@
     <dimen name="kg_framed_avatar_size">54dp</dimen>
 
     <!-- Margin on the left side of the carrier text on Keyguard -->
-    <dimen name="keyguard_carrier_text_margin">16dp</dimen>
+    <dimen name="keyguard_carrier_text_margin">@dimen/status_bar_padding_start</dimen>
 
     <!-- Margin on the left side of the battery % in the header. -->
     <dimen name="header_battery_margin_expanded">6dp</dimen>
@@ -793,7 +793,7 @@
     <dimen name="header_battery_margin_keyguard">6dp</dimen>
 
     <!-- Margin on the right side of the system icon group on Keyguard. -->
-    <dimen name="system_icons_keyguard_padding_end">4dp</dimen>
+    <dimen name="system_icons_keyguard_padding_end">@dimen/status_bar_padding_end</dimen>
 
     <!-- Additional translation (downwards) for appearing notifications when going to the full shade
          from Keyguard. -->
@@ -823,11 +823,11 @@
     <dimen name="keyguard_affordance_width">56dp</dimen>
 
     <!-- The width/height of the unlock icon view on keyguard. -->
-    <dimen name="keyguard_lock_height">42dp</dimen>
-    <dimen name="keyguard_lock_width">42dp</dimen>
+    <dimen name="keyguard_lock_height">0dp</dimen>
+    <dimen name="keyguard_lock_width">0dp</dimen>
     <dimen name="keyguard_lock_padding">20dp</dimen>
 
-    <dimen name="keyguard_indication_margin_bottom">40dp</dimen>
+    <dimen name="keyguard_indication_margin_bottom">20dp</dimen>
 
     <!-- The text size for battery level -->
     <dimen name="battery_level_text_size">12sp</dimen>

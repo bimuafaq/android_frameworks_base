@@ -447,15 +447,7 @@ public class KeyguardIndicationController implements StateListener,
             isError = mTransientTextIsError;
         } else if (!TextUtils.isEmpty(trustGrantedIndication)
                 && mKeyguardUpdateMonitor.getUserHasTrust(userId)) {
-            if (powerIndication != null) {
-                String indication = mContext.getResources().getString(
-                                R.string.keyguard_indication_trust_unlocked_plugged_in,
-                                trustGrantedIndication, powerIndication);
-                mTextView.switchIndication(indication);
-                hideIndication = !mBatteryPresent;
-            } else {
-                mTextView.switchIndication(trustGrantedIndication);
-            }
+            mTextView.switchIndication(trustGrantedIndication);
         } else if (!TextUtils.isEmpty(mAlignmentIndication)) {
             mTextView.switchIndication(mAlignmentIndication);
             isError = true;
@@ -475,7 +467,7 @@ public class KeyguardIndicationController implements StateListener,
                 && !mKeyguardUpdateMonitor.getUserHasTrust(userId)) {
             mTextView.switchIndication(trustManagedIndication);
         } else {
-            mTextView.switchIndication(mRestingIndication);
+            mTextView.switchIndication(R.string.keyguard_unlock);
         }
         mTextView.setTextColor(isError ? Utils.getColorError(mContext)
                 : mInitialTextColorState);
