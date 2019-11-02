@@ -234,7 +234,6 @@ public class KeyguardStatusBarView extends RelativeLayout
         Pair<Integer, Integer> cornerCutoutMargins =
                 StatusBarWindowView.cornerCutoutMargins(mDisplayCutout, getDisplay());
         updatePadding(cornerCutoutMargins);
-        updateCarrierLabelParams();
         if (mDisplayCutout == null || cornerCutoutMargins != null) {
             return updateLayoutParamsNoCutout();
         } else {
@@ -249,16 +248,6 @@ public class KeyguardStatusBarView extends RelativeLayout
                 StatusBarWindowView.paddingNeededForCutoutAndRoundedCorner(
                         mDisplayCutout, cornerCutoutMargins, mRoundedCornerPadding);
         setPadding(mPadding.first, waterfallTop, mPadding.second, 0);
-    }
-
-    private void updateCarrierLabelParams() {
-        int marginStart = calculateMargin(
-                getResources().getDimensionPixelSize(R.dimen.keyguard_carrier_text_margin),
-                mPadding.first);
-        MarginLayoutParams lp = (MarginLayoutParams) mCarrierLabel.getLayoutParams();
-        lp.setMarginStart(marginStart);
-
-        mCarrierLabel.setLayoutParams(lp);
     }
 
     private boolean updateLayoutParamsNoCutout() {

@@ -177,7 +177,8 @@ public class KeyguardClockPositionAlgorithm {
     }
 
     private int getMaxClockY() {
-        return mHeight / 2 - mKeyguardStatusHeight - mClockNotificationsMargin;
+        // Align the center of the clock at 1/3 of the screen
+        return mHeight / 3 - mKeyguardStatusHeight / 2;
     }
 
     private int getPreferredClockY() {
@@ -214,12 +215,11 @@ public class KeyguardClockPositionAlgorithm {
     }
 
     private int getClockY(float panelExpansion) {
-        // Dark: Align the bottom edge of the clock at about half of the screen:
         float clockYDark = (mHasCustomClock ? getPreferredClockY() : getMaxClockY())
                 + burnInPreventionOffsetY();
         clockYDark = MathUtils.max(0, clockYDark);
 
-        float clockYRegular = getExpandedPreferredClockY();
+        float clockYRegular = getMaxClockY();
         float clockYBouncer = -mKeyguardStatusHeight;
 
         // Move clock up while collapsing the shade
@@ -240,7 +240,7 @@ public class KeyguardClockPositionAlgorithm {
      * @return Alpha from 0 to 1.
      */
     private float getClockAlpha(int y) {
-        float alphaKeyguard = Math.max(0, y / Math.max(1f, getClockY(1f)));
+        float alphaKeyguard = Math.max(0, y / Math.max(1f, getMaxClockY()));
         alphaKeyguard = Interpolators.ACCELERATE.getInterpolation(alphaKeyguard);
         return MathUtils.lerp(alphaKeyguard, 1f, mDarkAmount);
     }
