@@ -1150,9 +1150,12 @@ public class AppOpsManager {
     // TODO: Add as AppProtoEnums
     public static final int OP_RECORD_AUDIO_HOTWORD = 102;
 
+    /** @hide  Access to other Sensors **/
+    public static final int OP_OTHER_SENSORS = 103;
+
     /** @hide */
     @UnsupportedAppUsage
-    public static final int _NUM_OP = 103;
+    public static final int _NUM_OP = 104;
 
     /** Access to coarse location information. */
     public static final String OPSTR_COARSE_LOCATION = "android:coarse_location";
@@ -1490,6 +1493,9 @@ public class AppOpsManager {
      */
     public static final String OPSTR_RECORD_AUDIO_HOTWORD = "android:record_audio_hotword";
 
+    /** @hide Other Sensors */
+    public static final String OPSTR_OTHER_SENSORS = "android:other_sensors";
+
     /** {@link #sAppOpsToNote} not initialized yet for this op */
     private static final byte SHOULD_COLLECT_NOTE_OP_NOT_INITIALIZED = 0;
     /** Should not collect noting of this app-op in {@link #sAppOpsToNote} */
@@ -1682,6 +1688,7 @@ public class AppOpsManager {
             OP_PHONE_CALL_MICROPHONE,           // OP_PHONE_CALL_MICROPHONE
             OP_PHONE_CALL_CAMERA,               // OP_PHONE_CALL_CAMERA
             OP_RECORD_AUDIO_HOTWORD,            // RECORD_AUDIO_HOTWORD
+            OP_OTHER_SENSORS,                   // OTHER SENSORS
     };
 
     /**
@@ -1791,6 +1798,7 @@ public class AppOpsManager {
             OPSTR_PHONE_CALL_MICROPHONE,
             OPSTR_PHONE_CALL_CAMERA,
             OPSTR_RECORD_AUDIO_HOTWORD,
+            OPSTR_OTHER_SENSORS,
     };
 
     /**
@@ -1901,6 +1909,7 @@ public class AppOpsManager {
             "PHONE_CALL_MICROPHONE",
             "PHONE_CALL_CAMERA",
             "RECORD_AUDIO_HOTWORD",
+            "OTHER_SENSORS",
     };
 
     /**
@@ -2012,6 +2021,7 @@ public class AppOpsManager {
             null, // no permission for OP_PHONE_CALL_MICROPHONE
             null, // no permission for OP_PHONE_CALL_CAMERA
             null, // no permission for OP_RECORD_AUDIO_HOTWORD
+            null, // no permission for OP_OTHER_SENSORS
     };
 
     /**
@@ -2123,6 +2133,7 @@ public class AppOpsManager {
             null, // PHONE_CALL_MICROPHONE
             null, // PHONE_CALL_MICROPHONE
             null, // RECORD_AUDIO_HOTWORD
+            null, // OTHER SENSORS
     };
 
     /**
@@ -2233,6 +2244,7 @@ public class AppOpsManager {
             null, // PHONE_CALL_MICROPHONE
             null, // PHONE_CALL_CAMERA
             null, // RECORD_AUDIO_HOTWORD
+            null, // OTHER SENSORS
     };
 
     /**
@@ -2342,6 +2354,7 @@ public class AppOpsManager {
             AppOpsManager.MODE_ALLOWED, // PHONE_CALL_MICROPHONE
             AppOpsManager.MODE_ALLOWED, // PHONE_CALL_CAMERA
             AppOpsManager.MODE_ALLOWED, // OP_RECORD_AUDIO_HOTWORD
+            AppOpsManager.MODE_ALLOWED, // OP_OTHER_SENSORS
     };
 
     /**
@@ -2455,6 +2468,7 @@ public class AppOpsManager {
             false, // PHONE_CALL_MICROPHONE
             false, // PHONE_CALL_CAMERA
             false, // RECORD_AUDIO_HOTWORD
+            false, // OTHER SENSORS
     };
 
     /**
