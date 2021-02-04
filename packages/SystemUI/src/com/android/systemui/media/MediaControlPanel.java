@@ -25,6 +25,7 @@ import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Outline;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.media.session.MediaController;
@@ -230,6 +231,8 @@ public class MediaControlPanel {
         ConstraintSet expandedSet = mMediaViewController.getExpandedLayout();
         ConstraintSet collapsedSet = mMediaViewController.getCollapsedLayout();
 
+        ImageView backgroundImage = mViewHolder.getPlayer().findViewById(R.id.bg_album_art);
+
         mViewHolder.getPlayer().setBackgroundTintList(
                 ColorStateList.valueOf(mBackgroundColor));
 
@@ -243,13 +246,33 @@ public class MediaControlPanel {
         }
 
         ImageView albumView = mViewHolder.getAlbumView();
-        boolean hasArtwork = data.getArtwork() != null;
+        Icon artwork = data.getArtwork();
+        boolean hasArtwork = artwork != null;
+
         if (hasArtwork) {
-            Drawable artwork = scaleDrawable(data.getArtwork());
-            albumView.setImageDrawable(artwork);
+            albumView.setImageDrawable(scaleDrawable(artwork));
         }
-        setVisibleAndAlpha(collapsedSet, R.id.album_art, hasArtwork);
-        setVisibleAndAlpha(expandedSet, R.id.album_art, hasArtwork);
+        setVisibleAndAlpha(collapsedSet, R.id.album_art, false);
+        setVisibleAndAlpha(expandedSet, R.id.album_art, false);
+
+        if (hasArtwork) {
+            backgroundImage.setImageDrawable(artwork.loadDrawable(mContext));
+            backgroundImage.setClipToOutline(true);
+            backgroundImage.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, backgroundImage.getWidth(),
+                        backgroundImage.getHeight(), mAlbumArtRadius);
+                }
+            });
+            backgroundImage.setImageAlpha(255);
+            backgroundImage.setColorFilter(0x75000000, android.graphics.PorterDuff.Mode.SRC_ATOP);
+        } else {
+            backgroundImage.setImageDrawable(null);
+            backgroundImage.setImageAlpha(255);
+        }
+        setVisibleAndAlpha(collapsedSet, R.id.bg_album_art, true);
+        setVisibleAndAlpha(expandedSet, R.id.bg_album_art, true);
 
         // App icon
         ImageView appIcon = mViewHolder.getAppIcon();
@@ -263,10 +286,6 @@ public class MediaControlPanel {
         // Song name
         TextView titleText = mViewHolder.getTitleText();
         titleText.setText(safeCharSequence(data.getSong()));
-
-        // App title
-        TextView appName = mViewHolder.getAppName();
-        appName.setText(data.getApp());
 
         // Artist name
         TextView artistText = mViewHolder.getArtistText();
