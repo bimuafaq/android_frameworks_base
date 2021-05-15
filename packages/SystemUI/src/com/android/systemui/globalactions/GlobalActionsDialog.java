@@ -2706,6 +2706,16 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
                 mScrimAlpha = 0.45f;
             }
             getWindow().setBackgroundDrawable(mBackgroundDrawable);
+
+            ViewGroup root = findViewById(com.android.systemui.R.id.global_actions_grid_root);
+            if (root != null) {
+                root.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                       dismiss();
+                    }
+                });
+            }
         }
 
         private void fixNavBarClipping() {
