@@ -81,6 +81,23 @@
                     android:paddingEnd="@dimen/status_bar_left_clock_end_padding"
                     android:gravity="center_vertical|start"
                 />
+                
+                <com.android.systemui.statusbar.LineageStatusBarItemHolder
+                    android:id="@+id/network_traffic_holder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layoutDirection="ltr"
+                    android:gravity="center"
+                >
+
+                <org.lineageos.internal.statusbar.NetworkTraffic
+                    android:id="@+id/network_traffic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:maxLines="2"
+                    android:gravity="center" />
+
+                </com.android.systemui.statusbar.LineageStatusBarItemHolder>                
 
                 <com.android.systemui.statusbar.AlphaOptimizedFrameLayout
                     android:id="@+id/notification_icon_area"
@@ -138,22 +155,6 @@
             android:visibility="gone"
         />
 
-        <com.android.systemui.statusbar.LineageStatusBarItemHolder
-            android:id="@+id/network_traffic_holder"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layoutDirection="ltr"
-            android:gravity="center"
-            >
-
-            <org.lineageos.internal.statusbar.NetworkTraffic
-                android:id="@+id/network_traffic"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:maxLines="2"
-                android:gravity="center" />
-
-        </com.android.systemui.statusbar.LineageStatusBarItemHolder>
     </com.android.keyguard.AlphaOptimizedLinearLayout>
 
     <ViewStub
