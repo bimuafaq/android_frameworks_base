@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -65,10 +65,14 @@ import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.util.wakelock.SettableWakeLock;
 import com.android.systemui.util.wakelock.WakeLock;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileReader;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.util.IllegalFormatConversionException;
+import java.util.Locale;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -138,6 +142,16 @@ public class KeyguardIndicationController implements StateListener,
                     return view == mIndicationArea;
                 }
             };
+
+    private final Runnable mUpdateBatteryInfoRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mVisible && mPowerPluggedIn) {
+                updateIndication(false);
+                mHandler.postDelayed(this, 5000);
+            }
+        }
+    };
 
     /**
      * Creates a new KeyguardIndicationController and registers callbacks.
@@ -393,6 +407,7 @@ public class KeyguardIndicationController implements StateListener,
         }
 
         if (!mVisible) {
+            mHandler.removeCallbacks(mUpdateBatteryInfoRunnable);
             return;
         }
 
@@ -426,6 +441,11 @@ public class KeyguardIndicationController implements StateListener,
                 mTextView.switchIndication(percentage);
             }
             return;
+        }
+
+        mHandler.removeCallbacks(mUpdateBatteryInfoRunnable);
+        if (mPowerPluggedIn) {
+            mHandler.postDelayed(mUpdateBatteryInfoRunnable, 5000);
         }
 
         int userId = KeyguardUpdateMonitor.getCurrentUser();
@@ -528,8 +548,11 @@ public class KeyguardIndicationController implements StateListener,
     }
 
     protected String computePowerIndication() {
+        String result;
+
         if (mPowerCharged) {
-            return mContext.getResources().getString(R.string.keyguard_charged);
+            result = mContext.getResources().getString(R.string.keyguard_charged);
+            return result + getExtendedBatteryInfo();
         }
 
         int chargingId;
@@ -537,7 +560,8 @@ public class KeyguardIndicationController implements StateListener,
 
         if (mBatteryOverheated) {
             chargingId = R.string.keyguard_plugged_in_charging_limited;
-            return mContext.getResources().getString(chargingId, percentage);
+            result = mContext.getResources().getString(chargingId, percentage);
+            return result + getExtendedBatteryInfo();
         }
 
         final boolean hasChargingTime = mChargingTimeRemaining > 0;
@@ -572,19 +596,21 @@ public class KeyguardIndicationController implements StateListener,
             String chargingTimeFormatted = Formatter.formatShortElapsedTimeRoundingUpToMinutes(
                     mContext, mChargingTimeRemaining);
             try {
-                return mContext.getResources().getString(chargingId, chargingTimeFormatted,
+                result = mContext.getResources().getString(chargingId, chargingTimeFormatted,
                         percentage);
             } catch (IllegalFormatConversionException e) {
-                return mContext.getResources().getString(chargingId, chargingTimeFormatted);
+                result = mContext.getResources().getString(chargingId, chargingTimeFormatted);
             }
         } else {
             // Same as above
             try {
-                return mContext.getResources().getString(chargingId, percentage);
+                result = mContext.getResources().getString(chargingId, percentage);
             } catch (IllegalFormatConversionException e) {
-                return mContext.getResources().getString(chargingId);
+                result = mContext.getResources().getString(chargingId);
             }
         }
+
+        return result + getExtendedBatteryInfo();
     }
 
     public void setStatusBarKeyguardViewManager(
@@ -852,6 +878,64 @@ public class KeyguardIndicationController implements StateListener,
             if (mVisible) {
                 updateIndication(false);
             }
+        }
+    }
+
+    private int readBatteryCurrentFromFile() {
+        try {
+            File file = new File("/sys/class/power_supply/battery/current_now");
+            if (file.exists()) {
+                BufferedReader br = new BufferedReader(new FileReader(file));
+                String line = br.readLine();
+                br.close();
+                if (line != null) {
+                    return Math.abs(Integer.parseInt(line.trim()));
+                }
+            }
+        } catch (Exception e) {
+        }
+        return 0;
+    }
+
+    private String getExtendedBatteryInfo() {
+        try {
+            Intent intent = mContext.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (intent == null) return "";
+
+            int tempRaw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0);
+            float tempC = tempRaw / 10.0f;
+
+            int voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
+            float voltageV = voltageMv / 1000f;
+
+            int rawCurrent = 0;
+            int fileCurrent = readBatteryCurrentFromFile();
+            if (fileCurrent > 0) {
+                rawCurrent = fileCurrent;
+            } else {
+                BatteryManager bm = (BatteryManager) mContext.getSystemService(Context.BATTERY_SERVICE);
+                if (bm != null) {
+                    rawCurrent = Math.abs(bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW));
+                }
+            }
+
+            int currentmA = rawCurrent;            
+            if (rawCurrent > 10000) {
+                currentmA = rawCurrent / 1000;
+            }
+
+            float wattage = (currentmA / 1000f) * voltageV;
+
+            if (currentmA == 0) return "";
+
+            // Format Output: 0mA • 0.0V • 0.0W • 0°C
+            return "\n" + currentmA + " mA \u2022 " +
+                   String.format(Locale.US, "%.1fV", voltageV) + " \u2022 " +
+                   String.format(Locale.US, "%.1fW", wattage) + " \u2022 " +
+                   String.format(Locale.US, "%.1f", tempC) + " \u00B0C";
+
+        } catch (Exception e) {
+            return "";
         }
     }
 }
