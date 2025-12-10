@@ -14504,6 +14504,13 @@ public final class Settings {
                 "nr_nsa_tracking_screen_off_mode";
 
         /**
+         * Force LTE Carrier Aggregation setting per SIM slot.
+         * Type: int (0 = disabled, 1 = enabled)
+         * @hide
+         */
+        public static final String FORCE_LTE_CA = "force_lte_ca";
+
+        /**
          * Whether to automatically reboot the device after a user defined timeout
          *
          * @hide
