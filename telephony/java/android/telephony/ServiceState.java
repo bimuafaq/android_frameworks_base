@@ -364,6 +364,9 @@ public class ServiceState implements Parcelable {
     private boolean mIsDataRoamingFromRegistration;
     private boolean mIsIwlanPreferred;
 
+    /** Force LTE CA flag @hide */
+    private boolean mForceLteCa = false;
+
     /**
      * get String description of roaming type
      * @hide
@@ -449,6 +452,7 @@ public class ServiceState implements Parcelable {
         mOperatorAlphaShortRaw = s.mOperatorAlphaShortRaw;
         mIsDataRoamingFromRegistration = s.mIsDataRoamingFromRegistration;
         mIsIwlanPreferred = s.mIsIwlanPreferred;
+        mForceLteCa = s.mForceLteCa;
     }
 
     /**
@@ -484,6 +488,7 @@ public class ServiceState implements Parcelable {
         mOperatorAlphaShortRaw = in.readString();
         mIsDataRoamingFromRegistration = in.readBoolean();
         mIsIwlanPreferred = in.readBoolean();
+        mForceLteCa = in.readBoolean();
     }
 
     public void writeToParcel(Parcel out, int flags) {
@@ -512,6 +517,7 @@ public class ServiceState implements Parcelable {
         out.writeString(mOperatorAlphaShortRaw);
         out.writeBoolean(mIsDataRoamingFromRegistration);
         out.writeBoolean(mIsIwlanPreferred);
+        out.writeBoolean(mForceLteCa);
     }
 
     public int describeContents() {
@@ -1149,6 +1155,7 @@ public class ServiceState implements Parcelable {
         mOperatorAlphaShortRaw = null;
         mIsDataRoamingFromRegistration = false;
         mIsIwlanPreferred = false;
+        mForceLteCa = false;
     }
 
     public void setStateOutOfService() {
@@ -1412,6 +1419,8 @@ public class ServiceState implements Parcelable {
 
     /** @hide */
     public boolean isUsingCarrierAggregation() {
+        if (mForceLteCa) return true;
+
         boolean isUsingCa = false;
         NetworkRegistrationInfo nri = getNetworkRegistrationInfo(
                 NetworkRegistrationInfo.DOMAIN_PS, AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
@@ -2124,5 +2133,10 @@ public class ServiceState implements Parcelable {
             return true;
         }
         return false;
+    }
+
+    /** @hide */
+    public void setForceLteCa(boolean force) {
+        mForceLteCa = force;
     }
 }
