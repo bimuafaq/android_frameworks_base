@@ -26,7 +26,9 @@ import android.content.res.Resources.NotFoundException;
 import android.content.res.Resources.Theme;
 import android.content.res.XmlResourceParser;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.AttributeSet;
+import android.util.PathParser;
 import android.util.Xml;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -132,6 +134,35 @@ public class AnimationUtils {
      */
     public static Animation loadAnimation(Context context, @AnimRes int id)
             throws NotFoundException {
+
+        int style = 0;
+        try {
+            style = Settings.System.getInt(context.getContentResolver(), "system_animation_style", 0);
+        } catch (Exception e) {
+            style = 0;
+        }
+
+        if (style != 0) {
+            try {
+                String resName = context.getResources().getResourceEntryName(id);
+                if (style == 1) {
+                    switch(resName) {
+                        case "activity_open_enter": return getPieActivityOpenEnterAnim();
+                        case "activity_open_exit": return getPieActivityOpenExitAnim();
+                        case "activity_close_enter": return getPieActivityCloseEnterAnim();
+                        case "activity_close_exit": return getPieActivityCloseExitAnim();
+                    }
+                } else if (style == 2) {
+                    switch(resName) {
+                        case "activity_open_enter": return getAndroidTOpenEnter();
+                        case "activity_open_exit": return getAndroidTOpenExit();
+                        case "activity_close_enter": return getAndroidTCloseEnter();
+                        case "activity_close_exit": return getAndroidTCloseExit();
+                    }
+                }
+            } catch (Exception e) {
+            }
+        }
 
         XmlResourceParser parser = null;
         try {
@@ -432,5 +463,104 @@ public class AnimationUtils {
             }
         }
         return interpolator;
+    }
+
+    private static Animation getPieActivityOpenEnterAnim() {
+        AnimationSet animationSet = new AnimationSet(false);
+        animationSet.setZAdjustment(Animation.ZORDER_TOP);
+        TranslateAnimation translateAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.04100001f, Animation.RELATIVE_TO_SELF, 0.0f);
+        translateAnimation.setInterpolator(fastOutSlowIn());
+        translateAnimation.setDuration(425L);
+        animationSet.addAnimation(translateAnimation);
+        ClipRectAnimation clipRectAnimation = new ClipRectAnimation(0.0f, 0.959f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+        clipRectAnimation.setDuration(425L);
+        clipRectAnimation.setInterpolator(fastOutExtraSlowIn());
+        animationSet.addAnimation(clipRectAnimation);
+        return animationSet;
+    }
+
+    private static Animation getPieActivityOpenExitAnim(){
+        AnimationSet animationSet = new AnimationSet(false);
+        TranslateAnimation translateAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, -0.019999981f);
+        translateAnimation.setDuration(425L);
+        translateAnimation.setInterpolator(fastOutSlowIn());
+        animationSet.addAnimation(translateAnimation);
+        AlphaAnimation alphaAnimation = new AlphaAnimation(1.0f,0.9f);
+        alphaAnimation.setDuration(117L);
+        alphaAnimation.setInterpolator(new LinearInterpolator());
+        animationSet.addAnimation(alphaAnimation);
+        return animationSet;
+    }
+
+    private static Animation getPieActivityCloseEnterAnim(){
+        AnimationSet animationSet = new AnimationSet(false);
+        TranslateAnimation translateAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, -0.019999981f, Animation.RELATIVE_TO_SELF, 0.0f);
+        translateAnimation.setDuration(425L);
+        translateAnimation.setInterpolator(fastOutSlowIn());
+        animationSet.addAnimation(translateAnimation);
+        AlphaAnimation alphaAnimation = new AlphaAnimation(0.9f,1.0f);
+        alphaAnimation.setDuration(425L);
+        alphaAnimation.setStartOffset(0);
+        alphaAnimation.setInterpolator(activityCloseDim());
+        animationSet.addAnimation(alphaAnimation);
+        return animationSet;
+    }
+
+    private static Animation getPieActivityCloseExitAnim(){
+        AnimationSet animationSet = new AnimationSet(false);
+        TranslateAnimation translateAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.04100001f);
+        translateAnimation.setDuration(425L);
+        translateAnimation.setInterpolator(fastOutSlowIn());
+        animationSet.addAnimation(translateAnimation);
+        ClipRectAnimation clipRectAnimation = new ClipRectAnimation(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.959f, 1.0f, 1.0f);
+        clipRectAnimation.setDuration(425L);
+        clipRectAnimation.setInterpolator(fastOutExtraSlowIn());
+        animationSet.addAnimation(clipRectAnimation);
+        return animationSet;
+    }
+
+    private static Interpolator fastOutSlowIn() {
+        return new PathInterpolator(0.4F, 0.0F, 0.2F, 1.0F);
+    }
+
+    private static Interpolator activityCloseDim() {
+        return new PathInterpolator(0.33f, 0.0f, 1.0f, 1.0f);
+    }
+
+    private static Interpolator fastOutExtraSlowIn() {
+        return new PathInterpolator(PathParser.createPathFromPathData("M 0,0 C 0.05, 0, 0.133333, 0.06, 0.166666, 0.4 C 0.208333, 0.82, 0.25, 1, 1, 1"));
+    }
+
+    private static final float ANDROID_T_DISTANCE = 0.1f;
+    private static final long ANDROID_T_DURATION = 425L;
+
+    private static Animation getAndroidTOpenEnter() {
+        return buildAndroidTAnim(1.0f, 0.0f);
+    }
+
+    private static Animation getAndroidTOpenExit() {
+        return buildAndroidTAnim(0.0f, -ANDROID_T_DISTANCE);
+    }
+
+    private static Animation getAndroidTCloseEnter() {
+        return buildAndroidTAnim(-ANDROID_T_DISTANCE, 0.0f);
+    }
+
+    private static Animation getAndroidTCloseExit() {
+        return buildAndroidTAnim(0.0f, 1.0f);
+    }
+
+    private static Animation buildAndroidTAnim(float fromX, float toX) {
+        AnimationSet animationSet = new AnimationSet(false);
+        TranslateAnimation slide = new TranslateAnimation(
+                Animation.RELATIVE_TO_SELF, fromX,
+                Animation.RELATIVE_TO_SELF, toX,
+                Animation.RELATIVE_TO_SELF, 0f,
+                Animation.RELATIVE_TO_SELF, 0f
+        );
+        slide.setDuration(ANDROID_T_DURATION);
+        slide.setInterpolator(fastOutExtraSlowIn());
+        animationSet.addAnimation(slide);
+        return animationSet;
     }
 }
