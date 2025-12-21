@@ -214,12 +214,12 @@ public class SignalDrawable extends DrawableWrapper {
             canvas.drawPath(mForegroundPath, mForegroundPaint);
         } else if (isInState(STATE_CUT)) {
             float cutX = (mCutoutWidthFraction * width / VIEWPORT);
-            float cutY = (mCutoutHeightFraction * height / VIEWPORT);
-            mCutoutPath.moveTo(width, height);
-            mCutoutPath.rLineTo(-cutX, 0);
-            mCutoutPath.rLineTo(0, -cutY);
-            mCutoutPath.rLineTo(cutX, 0);
-            mCutoutPath.rLineTo(0, cutY);
+            float radius = cutX / 2.0f;
+            float centerX = width - radius;
+            float centerY = height - radius;
+            mCutoutPath.reset();
+            mCutoutPath.setFillType(FillType.WINDING);
+            mCutoutPath.addCircle(centerX, centerY, radius, Direction.CW);
             canvas.drawPath(mCutoutPath, mTransparentPaint);
             canvas.drawPath(mScaledXPath, mForegroundPaint);
         }
