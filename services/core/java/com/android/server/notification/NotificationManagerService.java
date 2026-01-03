@@ -3478,6 +3478,7 @@ public class NotificationManagerService extends SystemService {
             for (int i = 0; i < channelsSize; i++) {
                 final NotificationChannel channel = channels.get(i);
                 Objects.requireNonNull(channel, "channel in list is null");
+                com.android.internal.util.custom.GmsWarningBlocker.silenceGmsChannel(getContext().getContentResolver(), channel);
                 needsPolicyFileChange = mPreferencesHelper.createNotificationChannel(pkg, uid,
                         channel, true /* fromTargetApp */,
                         mConditionProviders.isPackageOrComponentAllowed(

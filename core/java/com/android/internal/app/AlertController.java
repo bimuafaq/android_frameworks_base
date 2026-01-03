@@ -264,6 +264,18 @@ public class AlertController {
 
     @UnsupportedAppUsage
     public void installContent() {
+        if (com.android.internal.util.custom.GmsWarningBlocker.shouldDismissDialog(mContext.getContentResolver(), mTitle, mMessage)) {
+            if (mWindow != null) {
+                mWindow.setBackgroundDrawable(null);
+                mWindow.setDimAmount(0.0f);
+                mWindow.addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE 
+                        | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE 
+                        | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+            }
+            mHandler.post(() -> mDialogInterface.dismiss());
+            return;
+        }
+
         int contentView = selectContentView();
         mWindow.setContentView(contentView);
         setupView();
