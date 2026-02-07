@@ -19,6 +19,12 @@
     <!-- Width of the battery icon in the status bar when set to circle style. -->
     <dimen name="status_bar_battery_icon_circle_width">14.5dp</dimen>
 
+    <!-- OneUI battery dimensions -->
+    <dimen name="status_bar_battery_icon_oneui_width">23dp</dimen>
+    <dimen name="status_bar_battery_icon_oneui_height">15dp</dimen>
+    <dimen name="status_bar_battery_icon_oneui_text_size">12.5dp</dimen>
+    <dimen name="status_bar_battery_icon_oneui_radius">7.5dp</dimen>
+
     <!-- Largest size an avatar might need to be drawn in the power menu user picker -->
     <dimen name="global_actions_avatar_size">24dp</dimen>
 </resources>
