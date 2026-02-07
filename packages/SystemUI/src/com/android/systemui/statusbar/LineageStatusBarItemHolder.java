@@ -88,8 +88,9 @@ public class LineageStatusBarItemHolder extends RelativeLayout
             mLastArea = area;
             mLastDarkIntensity = darkIntensity;
             mLastTint = tint;
+            int localTint = DarkIconDispatcher.getTint(area, LineageStatusBarItemHolder.this, tint);
             for (LineageStatusBarItem.DarkReceiver r : mDarkReceivers) {
-                r.onDarkChanged(area, darkIntensity, tint);
+                r.onDarkChanged(area, darkIntensity, localTint);
             }
         }
     };
