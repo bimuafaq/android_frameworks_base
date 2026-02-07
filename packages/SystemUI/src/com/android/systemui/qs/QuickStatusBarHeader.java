@@ -120,6 +120,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
             "lineagesecure:" + LineageSettings.Secure.QS_SHOW_AUTO_BRIGHTNESS;
     private static final String QS_SHOW_BRIGHTNESS_SLIDER =
             "lineagesecure:" + LineageSettings.Secure.QS_SHOW_BRIGHTNESS_SLIDER;
+    private static final String STATUS_BAR_BATTERY_STYLE =
+            "lineagesystem:" + LineageSettings.System.STATUS_BAR_BATTERY_STYLE;
 
     private final NextAlarmController mAlarmController;
     private final ZenModeController mZenController;
@@ -298,9 +300,12 @@ public class QuickStatusBarHeader extends RelativeLayout implements
 
         // Tint for the battery icons are handled in setupHost()
         mBatteryRemainingIcon = findViewById(R.id.batteryRemainingIcon);
-        // QS will always show the estimate, and BatteryMeterView handles the case where
-        // it's unavailable or charging
-        mBatteryRemainingIcon.setPercentShowMode(BatteryMeterView.MODE_ESTIMATE);
+        // QS battery mode depends on the selected style
+        int batteryStyle = LineageSettings.System.getInt(getContext().getContentResolver(),
+                LineageSettings.System.STATUS_BAR_BATTERY_STYLE, 0);
+        boolean isModernStyle = batteryStyle == 3 || batteryStyle == 4;
+        mBatteryRemainingIcon.setPercentShowMode(isModernStyle
+                ? BatteryMeterView.MODE_DEFAULT : BatteryMeterView.MODE_ESTIMATE);
         mBatteryRemainingIcon.setOnClickListener(this);
         mRingerModeTextView.setSelected(true);
         mNextAlarmTextView.setSelected(true);
@@ -310,7 +315,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
 
         Dependency.get(TunerService.class).addTunable(this,
                 StatusBarIconController.ICON_BLACKLIST,
-                QS_SHOW_AUTO_BRIGHTNESS, QS_SHOW_BRIGHTNESS_SLIDER);
+                QS_SHOW_AUTO_BRIGHTNESS, QS_SHOW_BRIGHTNESS_SLIDER,
+                STATUS_BAR_BATTERY_STYLE);
     }
 
     public QuickQSPanel getHeaderQsPanel() {
@@ -835,6 +841,11 @@ public class QuickStatusBarHeader extends RelativeLayout implements
         } else if (QS_SHOW_AUTO_BRIGHTNESS.equals(key)) {
             mIsQsAutoBrightnessEnabled = TunerService.parseIntegerSwitch(newValue, true);
             updateResources();
+        } else if (STATUS_BAR_BATTERY_STYLE.equals(key)) {
+            int style = TunerService.parseInteger(newValue, 0);
+            boolean isModernStyle = style == 3 || style == 4;
+            mBatteryRemainingIcon.setPercentShowMode(isModernStyle
+                    ? BatteryMeterView.MODE_DEFAULT : BatteryMeterView.MODE_ESTIMATE);
         } else if (StatusBarIconController.ICON_BLACKLIST.equals(key)) {
             mClockView.setClockVisibleByUser(!StatusBarIconController.getIconBlacklist(
                     mContext, newValue).contains("clock"));
