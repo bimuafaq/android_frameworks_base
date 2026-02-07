@@ -1,0 +1,236 @@
+/*
+ * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2019 The LineageOS Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.settingslib.graph
+
+import android.content.Context
+import android.graphics.*
+import android.graphics.drawable.Drawable
+import kotlin.math.floor
+
+class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
+
+    private val fillRect = RectF()
+    private val levelRect = RectF()
+    private val levelPath = Path()
+    private val textPath = Path()
+    private val unifiedPath = Path()
+    private val alphaPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    private var intrinsicHeight: Int
+    private var intrinsicWidth: Int
+
+    private var baseWidth: Float = 0f
+    private var baseHeight: Float = 0f
+    private var baseTextSize: Float = 0f
+    private var baseRadius: Float = 0f
+
+    private var fillColor: Int = Color.WHITE
+    private var batteryLevel = 0
+
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
+        p.color = frameColor
+        p.style = Paint.Style.FILL_AND_STROKE
+    }
+
+    private val dualToneBackgroundFill = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
+        p.color = 0xFFB1B1B1.toInt()
+        p.alpha = 255
+        p.style = Paint.Style.FILL_AND_STROKE
+    }
+
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
+        val res = context.resources
+        val resId = res.getIdentifier("config_bodyFontFamily", "string", "android")
+        val fontFamily = if (resId != 0) res.getString(resId) else "sans-serif-condensed"
+        p.typeface = Typeface.create(fontFamily, Typeface.BOLD)
+        p.textAlign = Paint.Align.CENTER
+    }
+
+    private var charging = false
+    private var powerSaveEnabled = false
+    private var mShowPercent = true
+    private var drawableAlpha = 255
+
+    init {
+        val res = context.resources
+        val density = res.displayMetrics.density
+
+        val widthId = res.getIdentifier("status_bar_battery_icon_oneui_width", "dimen", context.packageName)
+        val heightId = res.getIdentifier("status_bar_battery_icon_oneui_height", "dimen", context.packageName)
+        val textSizeId = res.getIdentifier("status_bar_battery_icon_oneui_text_size", "dimen", context.packageName)
+        val radiusId = res.getIdentifier("status_bar_battery_icon_oneui_radius", "dimen", context.packageName)
+
+        if (widthId != 0 && heightId != 0) {
+            intrinsicWidth = res.getDimensionPixelSize(widthId)
+            intrinsicHeight = res.getDimensionPixelSize(heightId)
+        } else {
+            intrinsicWidth = (23f * density).toInt()
+            intrinsicHeight = (15f * density).toInt()
+        }
+
+        if (textSizeId != 0) {
+            baseTextSize = res.getDimensionPixelSize(textSizeId).toFloat()
+        } else {
+            baseTextSize = intrinsicHeight * 0.82f
+        }
+
+        baseWidth = intrinsicWidth.toFloat()
+        baseHeight = intrinsicHeight.toFloat()
+
+        if (radiusId != 0) {
+            baseRadius = res.getDimensionPixelSize(radiusId).toFloat()
+        } else {
+            baseRadius = baseHeight / 2.0f
+        }
+    }
+
+    fun setCharging(active: Boolean) {
+        charging = active
+        invalidateSelf()
+    }
+
+    fun setPowerSaveEnabled(enabled: Boolean) {
+        powerSaveEnabled = enabled
+        invalidateSelf()
+    }
+
+    fun setShowPercent(show: Boolean) {
+        mShowPercent = show
+        invalidateSelf()
+    }
+
+    fun setBatteryLevel(level: Int) {
+        batteryLevel = level
+        invalidateSelf()
+    }
+
+    fun getBatteryLevel(): Int = batteryLevel
+
+    override fun draw(c: Canvas) {
+        if (batteryLevel == -1) return
+        alphaPaint.alpha = drawableAlpha
+        c.saveLayer(null, alphaPaint)
+
+        val attribution = attributionGlyph()
+
+        unifiedPath.reset()
+        fillRect.set(bounds)
+        val radius = baseRadius * bounds.height() / baseHeight
+        unifiedPath.addRoundRect(fillRect, radius, radius, Path.Direction.CW)
+
+        levelPath.reset()
+        levelRect.set(fillRect)
+
+        val fillFraction = batteryLevel / 100f
+        val fillTop = if (batteryLevel >= 95) fillRect.right
+        else fillRect.right - fillRect.width() * (1 - fillFraction)
+
+        levelRect.right = floor(fillTop)
+        levelPath.addRect(levelRect, Path.Direction.CCW)
+        fillPaint.color = fillColor
+
+        val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
+        textPaint.textSize = baseTextSize * scaleFactor
+
+        val textY = bounds.centerY() - (textPaint.fontMetrics.descent + textPaint.fontMetrics.ascent) / 2
+        val levelText = batteryLevel.toString()
+        val textWidth = if (mShowPercent) textPaint.measureText(levelText) else 0f
+        val glyphSize = if (attribution != null) bounds.height() * GLYPH_SIZE_FRACTION else 0f
+        val glyphGap = if (attribution != null) bounds.height() * gapFor(attribution) else 0f
+        val contentStart = (bounds.width() - glyphSize - glyphGap - textWidth) / 2f
+        val textX = contentStart + glyphSize + glyphGap + textWidth / 2f
+
+        textPath.reset()
+        if (mShowPercent) {
+            textPaint.getTextPath(levelText, 0, levelText.length, textX, textY, textPath)
+        }
+
+        unifiedPath.op(textPath, Path.Op.DIFFERENCE)
+        if (attribution != null) {
+            val top = (bounds.height() - glyphSize) / 2f
+            unifiedPath.op(
+                BatteryAttributionRenderer.path(
+                    attribution, RectF(contentStart, top, contentStart + glyphSize, top + glyphSize)),
+                Path.Op.DIFFERENCE
+            )
+        }
+        c.drawPath(unifiedPath, dualToneBackgroundFill)
+
+        c.save()
+        c.clipRect(
+            bounds.left.toFloat(),
+            bounds.top.toFloat(),
+            bounds.left + bounds.width() * fillFraction,
+            bounds.bottom.toFloat()
+        )
+        c.drawPath(unifiedPath, fillPaint)
+        c.restore()
+    }
+
+    override fun setAlpha(alpha: Int) { drawableAlpha = alpha; invalidateSelf() }
+
+    override fun setColorFilter(colorFilter: ColorFilter?) {
+        fillPaint.colorFilter = colorFilter
+        dualToneBackgroundFill.colorFilter = colorFilter
+    }
+
+    override fun getOpacity(): Int = PixelFormat.OPAQUE
+    override fun getIntrinsicHeight(): Int = intrinsicHeight
+    override fun getIntrinsicWidth(): Int = intrinsicWidth
+
+    override fun onBoundsChange(bounds: Rect) {
+        super.onBoundsChange(bounds)
+        updateSize()
+    }
+
+    fun setColors(fgColor: Int, bgColor: Int, singleToneColor: Int) {
+        fillColor = fgColor
+        fillPaint.color = fillColor
+        dualToneBackgroundFill.color = 0xFFB1B1B1.toInt()
+        dualToneBackgroundFill.alpha = 255
+        invalidateSelf()
+    }
+
+    private fun updateSize() {
+        fillRect.set(bounds)
+    }
+
+    fun hasAttribution(): Boolean = attributionGlyph() != null
+
+    fun getAttributionExtraWidth(heightPx: Int): Int {
+        val g = attributionGlyph() ?: return 0
+        return (heightPx * (GLYPH_SIZE_FRACTION + gapFor(g))).toInt()
+    }
+
+    private fun gapFor(glyph: BatteryAttributionGlyph): Float = when (glyph) {
+        BatteryAttributionGlyph.SEC_BOLT -> CHARGING_GAP_FRACTION
+        else -> GLYPH_GAP_FRACTION
+    }
+
+    private fun attributionGlyph(): BatteryAttributionGlyph? = when {
+        powerSaveEnabled -> BatteryAttributionGlyph.LEAF
+        charging -> BatteryAttributionGlyph.SEC_BOLT
+        else -> null
+    }
+
+    companion object {
+        private const val GLYPH_SIZE_FRACTION = 0.65f
+        private const val GLYPH_GAP_FRACTION = 0.12f
+        private const val CHARGING_GAP_FRACTION = 0.06f
+    }
+}
