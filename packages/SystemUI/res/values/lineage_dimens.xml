@@ -25,6 +25,12 @@
     <dimen name="status_bar_battery_icon_oneui_text_size">12.5dp</dimen>
     <dimen name="status_bar_battery_icon_oneui_radius">7.5dp</dimen>
 
+    <!-- IOS battery dimensions -->
+    <dimen name="status_bar_battery_icon_ios_width">26dp</dimen>
+    <dimen name="status_bar_battery_icon_ios_height">13dp</dimen>
+    <dimen name="status_bar_battery_icon_ios_text_size">11.5dp</dimen>
+    <dimen name="status_bar_battery_icon_ios_radius">4dp</dimen>
+
     <!-- Largest size an avatar might need to be drawn in the power menu user picker -->
     <dimen name="global_actions_avatar_size">24dp</dimen>
 </resources>

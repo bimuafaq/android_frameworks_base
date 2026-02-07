@@ -24,7 +24,7 @@ import android.util.TypedValue
 import com.android.settingslib.R
 import com.android.settingslib.Utils
 
-class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
+class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
 
     private val perimeterPath = Path()
     private val scaledPerimeter = Path()
@@ -36,6 +36,9 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     private val unifiedPath = Path()
     private val scaleMatrix = Matrix()
     private val padding = Rect()
+    
+    private val buttonPath = Path()
+    private val scaledButton = Path()
 
     private var intrinsicHeight: Int
     private var intrinsicWidth: Int
@@ -44,6 +47,11 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     private var baseHeight: Float = 0f
     private var baseTextSize: Float = 0f
     private var baseRadius: Float = 0f
+    
+    private var gap: Float = 0f
+    private var bodyWidth: Float = 0f
+    private var buttonWidth: Float = 0f
+    private var buttonHeight: Float = 0f
 
     private var colorLevels: IntArray
     private var fillColor: Int = Color.WHITE
@@ -77,17 +85,17 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         val res = context.resources
         val density = res.displayMetrics.density
 
-        val widthId = res.getIdentifier("status_bar_battery_icon_oneui_width", "dimen", context.packageName)
-        val heightId = res.getIdentifier("status_bar_battery_icon_oneui_height", "dimen", context.packageName)
-        val textSizeId = res.getIdentifier("status_bar_battery_icon_oneui_text_size", "dimen", context.packageName)
-        val radiusId = res.getIdentifier("status_bar_battery_icon_oneui_radius", "dimen", context.packageName)
+        val widthId = res.getIdentifier("status_bar_battery_icon_ios_width", "dimen", context.packageName)
+        val heightId = res.getIdentifier("status_bar_battery_icon_ios_height", "dimen", context.packageName)
+        val textSizeId = res.getIdentifier("status_bar_battery_icon_ios_text_size", "dimen", context.packageName)
+        val radiusId = res.getIdentifier("status_bar_battery_icon_ios_radius", "dimen", context.packageName)
 
         if (widthId != 0 && heightId != 0) {
             intrinsicWidth = res.getDimensionPixelSize(widthId)
             intrinsicHeight = res.getDimensionPixelSize(heightId)
         } else {
-            intrinsicWidth = (23f * density).toInt()
-            intrinsicHeight = (15f * density).toInt()
+            intrinsicWidth = (26f * density).toInt()
+            intrinsicHeight = (13f * density).toInt()
         }
 
         if (textSizeId != 0) {
@@ -102,7 +110,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         if (radiusId != 0) {
             baseRadius = res.getDimensionPixelSize(radiusId).toFloat()
         } else {
-            baseRadius = baseHeight / 2.0f
+            baseRadius = 4f * density
         }
 
         val levels = res.obtainTypedArray(R.array.batterymeter_color_levels)
@@ -157,53 +165,47 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         val alphaPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         alphaPaint.alpha = drawableAlpha
         c.saveLayer(null, alphaPaint)
+        
         unifiedPath.reset()
         levelPath.reset()
         levelRect.set(fillRect)
         
         val fillFraction = batteryLevel / 100f
-        val fillTop = if (batteryLevel >= 95) fillRect.right
-        else fillRect.right - (fillRect.width() * (1 - fillFraction))
+        val fillRight = fillRect.right * fillFraction
 
-        levelRect.right = Math.floor(fillTop.toDouble()).toFloat()
+        levelRect.right = Math.floor(fillRight.toDouble()).toFloat()
         levelPath.addRect(levelRect, Path.Direction.CCW)
 
-        unifiedPath.addPath(scaledPerimeter)
-        
-        if (!dualTone) {
-            unifiedPath.op(levelPath, Path.Op.UNION)
-        }
-        fillPaint.color = levelColor
-
-        val mergedPath = Path()
-        mergedPath.reset()
-
-        val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
-        textPaint.textSize = baseTextSize * scaleFactor
-
-        val textY = bounds.centerY() - (textPaint.fontMetrics.descent + textPaint.fontMetrics.ascent) / 2
-        val textX = bounds.width() * 0.5f
-        
+        // Setup Text Path for "DIFFERENCE" logic
         val textPath = Path()
-        if (mShowPercent) {
-             textPaint.getTextPath(
-                batteryLevel.toString(), 0, batteryLevel.toString().length, textX, textY, textPath
-            )
-            mergedPath.addPath(textPath)
+        val bodyRect = RectF()
+        scaledPerimeter.computeBounds(bodyRect, true)
+        val cx = bodyRect.centerX()
+        val cy = bodyRect.centerY()
+        
+        if (mShowPercent && batteryLevel != 100) {
+            val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
+            textPaint.textSize = baseTextSize * scaleFactor
+            val textY = cy - ((textPaint.fontMetrics.descent + textPaint.fontMetrics.ascent) / 2f)
+            textPaint.getTextPath(batteryLevel.toString(), 0, batteryLevel.toString().length, cx, textY, textPath)
         }
+
+        // Draw Background (Track) with Text subtracted
+        val backgroundPath = Path()
+        backgroundPath.addPath(scaledPerimeter)
+        backgroundPath.addPath(scaledButton)
+        backgroundPath.op(textPath, Path.Op.DIFFERENCE)
+        c.drawPath(backgroundPath, dualToneBackgroundFill)
+
+        // Draw Fill with Text subtracted
+        val fillDrawPath = Path()
+        fillDrawPath.set(scaledPerimeter)
+        fillDrawPath.op(levelPath, Path.Op.INTERSECT)
+        fillDrawPath.op(textPath, Path.Op.DIFFERENCE)
         
-        unifiedPath.op(textPath, Path.Op.DIFFERENCE)
+        fillPaint.color = levelColor
+        c.drawPath(fillDrawPath, fillPaint)
         
-        c.drawPath(unifiedPath, dualToneBackgroundFill)
-        
-        c.save()
-        c.clipRect(
-            bounds.left.toFloat(),
-            bounds.top.toFloat(),
-            bounds.left + bounds.width() * fillFraction,
-            bounds.bottom.toFloat()
-        )
-        c.drawPath(unifiedPath, fillPaint)
         c.restore()
     }
 
@@ -244,6 +246,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     override fun setColorFilter(colorFilter: ColorFilter?) {
         fillPaint.colorFilter = colorFilter
         dualToneBackgroundFill.colorFilter = colorFilter
+        textPaint.colorFilter = colorFilter
     }
 
     override fun getOpacity(): Int = PixelFormat.OPAQUE
@@ -278,14 +281,39 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
             scaleMatrix.setScale(sx, sy)
         }
         perimeterPath.transform(scaleMatrix, scaledPerimeter)
+        buttonPath.transform(scaleMatrix, scaledButton)
         fillMask.transform(scaleMatrix, scaledFill)
         scaledFill.computeBounds(fillRect, true)
     }
 
     private fun loadPaths() {
-        val radius = baseRadius        
-        perimeterPath.addRoundRect(RectF(0f, 0f, baseWidth, baseHeight), radius, radius, Path.Direction.CW)
-        fillMask.addRoundRect(RectF(0f, 0f, baseWidth, baseHeight), radius, radius, Path.Direction.CW)
+        gap = baseWidth * (0.5f / 26f) // Small spasi (gap)
+        bodyWidth = baseWidth * (23.5f / 26f)
+        buttonWidth = baseWidth - bodyWidth - gap
+        buttonHeight = baseHeight * (6f / 13f)
+        
+        perimeterPath.reset()
+        perimeterPath.addRoundRect(RectF(0f, 0f, bodyWidth, baseHeight), baseRadius, baseRadius, Path.Direction.CW)
+        
+        buttonPath.reset()
+        val buttonTop = (baseHeight - buttonHeight) / 2f
+        val buttonLeft = bodyWidth + gap
+        val buttonRight = baseWidth
+        val buttonBottom = buttonTop + buttonHeight
+        
+        val buttonRect = RectF(buttonLeft, buttonTop, buttonRight, buttonBottom)
+        
+        // Draw true half-circle (D-shape)
+        buttonPath.moveTo(buttonLeft, buttonTop)
+        // arcTo(oval, startAngle, sweepAngle, forceMoveTo)
+        // Oval should be centered at the right edge
+        val oval = RectF(buttonLeft - buttonWidth, buttonTop, buttonRight, buttonBottom)
+        buttonPath.arcTo(oval, 270f, 180f, false)
+        buttonPath.lineTo(buttonLeft, buttonBottom)
+        buttonPath.close()
+
+        fillMask.reset()
+        fillMask.addPath(perimeterPath)
         fillMask.computeBounds(fillRect, true)
         dualTone = true
     }
