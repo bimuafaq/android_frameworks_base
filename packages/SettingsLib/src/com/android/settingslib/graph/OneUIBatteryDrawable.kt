@@ -64,7 +64,10 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
-        p.typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
+        val res = context.resources
+        val resId = res.getIdentifier("config_bodyFontFamily", "string", "android")
+        val fontFamily = if (resId != 0) res.getString(resId) else "sans-serif-condensed"
+        p.typeface = Typeface.create(fontFamily, Typeface.BOLD)
         p.textAlign = Paint.Align.CENTER
     }
 
