@@ -399,7 +399,7 @@ public final class ActiveServices {
         } catch(RuntimeException e) {
         }
         mMaxStartingBackground = maxBg > 0
-                ? maxBg : ActivityManager.isLowRamDeviceStatic() ? 1 : 8;
+                ? maxBg : 4;
     }
 
     void systemServicesReady() {

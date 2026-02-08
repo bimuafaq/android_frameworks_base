@@ -74,9 +74,8 @@ public final class BroadcastQueue {
     private static final String TAG_MU = TAG + POSTFIX_MU;
     private static final String TAG_BROADCAST = TAG + POSTFIX_BROADCAST;
 
-    static final int MAX_BROADCAST_HISTORY = ActivityManager.isLowRamDeviceStatic() ? 10 : 50;
-    static final int MAX_BROADCAST_SUMMARY_HISTORY
-            = ActivityManager.isLowRamDeviceStatic() ? 25 : 300;
+    static final int MAX_BROADCAST_HISTORY = 25;
+    static final int MAX_BROADCAST_SUMMARY_HISTORY = 150;
 
     final ActivityManagerService mService;
 

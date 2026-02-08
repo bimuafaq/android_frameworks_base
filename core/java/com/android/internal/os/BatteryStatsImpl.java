@@ -156,15 +156,7 @@ public class BatteryStatsImpl extends BatteryStats {
     // The maximum number of names wakelocks we will keep track of
     // per uid; once the limit is reached, we batch the remaining wakelocks
     // in to one common name.
-    private static final int MAX_WAKELOCKS_PER_UID;
-
-    static {
-        if (ActivityManager.isLowRamDeviceStatic()) {
-            MAX_WAKELOCKS_PER_UID = 40;
-        } else {
-            MAX_WAKELOCKS_PER_UID = 200;
-        }
-    }
+    private static final int MAX_WAKELOCKS_PER_UID = 40;
 
     // Number of transmit power states the Wifi controller can be in.
     private static final int NUM_WIFI_TX_LEVELS = 1;
@@ -13029,13 +13021,8 @@ public class BatteryStatsImpl extends BatteryStats {
 
         public Constants(Handler handler) {
             super(handler);
-            if (ActivityManager.isLowRamDeviceStatic()) {
-                MAX_HISTORY_FILES = DEFAULT_MAX_HISTORY_FILES_LOW_RAM_DEVICE;
-                MAX_HISTORY_BUFFER = DEFAULT_MAX_HISTORY_BUFFER_LOW_RAM_DEVICE_KB * 1024;
-            } else {
-                MAX_HISTORY_FILES = DEFAULT_MAX_HISTORY_FILES;
-                MAX_HISTORY_BUFFER = DEFAULT_MAX_HISTORY_BUFFER_KB * 1024;
-            }
+            MAX_HISTORY_FILES = DEFAULT_MAX_HISTORY_FILES_LOW_RAM_DEVICE;
+            MAX_HISTORY_BUFFER = DEFAULT_MAX_HISTORY_BUFFER_LOW_RAM_DEVICE_KB * 1024;
         }
 
         public void startObserving(ContentResolver resolver) {
@@ -13094,13 +13081,9 @@ public class BatteryStatsImpl extends BatteryStats {
                         DEFAULT_BATTERY_LEVEL_COLLECTION_DELAY_MS);
 
                 MAX_HISTORY_FILES = mParser.getInt(KEY_MAX_HISTORY_FILES,
-                        ActivityManager.isLowRamDeviceStatic() ?
-                                DEFAULT_MAX_HISTORY_FILES_LOW_RAM_DEVICE
-                        : DEFAULT_MAX_HISTORY_FILES);
+                        DEFAULT_MAX_HISTORY_FILES_LOW_RAM_DEVICE);
                 MAX_HISTORY_BUFFER = mParser.getInt(KEY_MAX_HISTORY_BUFFER_KB,
-                        ActivityManager.isLowRamDeviceStatic() ?
-                                DEFAULT_MAX_HISTORY_BUFFER_LOW_RAM_DEVICE_KB
-                                : DEFAULT_MAX_HISTORY_BUFFER_KB)
+                        DEFAULT_MAX_HISTORY_BUFFER_LOW_RAM_DEVICE_KB)
                         * 1024;
                 updateBatteryChargedDelayMsLocked();
             }
