@@ -2004,10 +2004,7 @@ public class AppStandbyController implements AppStandbyInternal {
 
                 final ActivityManager activityManager =
                         (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
-                if (activityManager.isLowRamDevice() || ActivityManager.isSmallBatteryDevice()) {
-                    mAutoRestrictedBucketDelayMs = 12 * ONE_HOUR;
-                }
-
+                mAutoRestrictedBucketDelayMs = 12 * ONE_HOUR;
                 final PackageManager packageManager = mContext.getPackageManager();
                 mWellbeingApp = packageManager.getWellbeingPackageName();
             }

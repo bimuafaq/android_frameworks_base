@@ -34,11 +34,7 @@ public interface MessagingMessage extends MessagingLinearLayout.MessagingChild {
 
     static MessagingMessage createMessage(IMessagingLayout layout,
             Notification.MessagingStyle.Message m, ImageResolver resolver) {
-        if (hasImage(m) && !ActivityManager.isLowRamDeviceStatic()) {
-            return MessagingImageMessage.createMessage(layout, m, resolver);
-        } else {
             return MessagingTextMessage.createMessage(layout, m);
-        }
     }
 
     static void dropCache() {

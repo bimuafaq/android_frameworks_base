@@ -844,10 +844,7 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv, bool zygote, bool p
     parseRuntimeOption("dalvik.vm.ps-resolved-classes-delay-ms", saveResolvedClassesDelayMsOptsBuf,
             "-Xps-save-resolved-classes-delay-ms:");
 
-    property_get("ro.config.low_ram", propBuf, "");
-    if (strcmp(propBuf, "true") == 0) {
-      addOption("-XX:LowMemoryMode");
-    }
+    addOption("-XX:LowMemoryMode");
 
     /*
      * Garbage-collection related options.
