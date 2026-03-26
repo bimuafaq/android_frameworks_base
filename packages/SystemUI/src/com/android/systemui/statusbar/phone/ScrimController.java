@@ -34,10 +34,15 @@ import android.view.ViewTreeObserver;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 
+import android.content.Context;
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.UserHandle;
+import android.provider.Settings;
+import android.text.TextUtils;
+
 import com.android.internal.annotations.VisibleForTesting;
-import com.android.internal.colorextraction.ColorExtractor;
 import com.android.internal.colorextraction.ColorExtractor.GradientColors;
-import com.android.internal.colorextraction.ColorExtractor.OnColorsChangedListener;
 import com.android.internal.graphics.ColorUtils;
 import com.android.internal.util.function.TriConsumer;
 import com.android.keyguard.KeyguardUpdateMonitor;
@@ -69,11 +74,19 @@ import javax.inject.Singleton;
  * security method gets shown).
  */
 @Singleton
-public class ScrimController implements ViewTreeObserver.OnPreDrawListener, OnColorsChangedListener,
-        Dumpable {
+public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dumpable {
 
     static final String TAG = "ScrimController";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
+
+    private static final String KEY_SCRIM_HEX = "system_qs_scrim_hex";
+    private static final String KEY_SCRIM_ALPHA = "system_qs_scrim_alpha";
+    private static final int DEFAULT_SCRIM_COLOR = -14671580;
+
+    private int mCustomScrimColor = DEFAULT_SCRIM_COLOR;
+    private float mCustomScrimAlphaVal;
+    private SettingsObserver mSettingsObserver;
+    private Context mContext;
 
     /**
      * General scrim animation duration.
@@ -149,12 +162,11 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, OnCo
     private final KeyguardVisibilityCallback mKeyguardVisibilityCallback;
     private final Handler mHandler;
 
-    private final SysuiColorExtractor mColorExtractor;
     private GradientColors mColors;
     private boolean mNeedsDrawableColorUpdate;
 
     private float mScrimBehindAlphaKeyguard = KEYGUARD_SCRIM_ALPHA;
-    private final float mDefaultScrimAlpha;
+    private float mDefaultScrimAlpha;
 
     // Assuming the shade is expanded during initialization
     private float mExpansionFraction = 1f;
@@ -226,9 +238,11 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, OnCo
             }
         });
 
-        mColorExtractor = sysuiColorExtractor;
-        mColorExtractor.addOnColorsChangedListener(this);
-        mColors = mColorExtractor.getNeutralColors();
+        mColors = new GradientColors();
+        mColors.setMainColor(DEFAULT_SCRIM_COLOR);
+        mColors.setSecondaryColor(DEFAULT_SCRIM_COLOR);
+        mColors.setColorPalette(new int[] {DEFAULT_SCRIM_COLOR});
+        mColors.setSupportsDarkText(false);
         mNeedsDrawableColorUpdate = true;
     }
 
@@ -240,6 +254,12 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, OnCo
         mScrimBehind = scrimBehind;
         mScrimInFront = scrimInFront;
         mScrimForBubble = scrimForBubble;
+        
+        mContext = scrimBehind.getContext();
+        if (mSettingsObserver == null) {
+            mSettingsObserver = new SettingsObserver(mHandler);
+            mSettingsObserver.observe();
+        }
 
         final ScrimState[] states = ScrimState.values();
         for (int i = 0; i < states.length; i++) {
@@ -942,13 +962,6 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, OnCo
     }
 
     @Override
-    public void onColorsChanged(ColorExtractor colorExtractor, int which) {
-        mColors = mColorExtractor.getNeutralColors();
-        mNeedsDrawableColorUpdate = true;
-        scheduleUpdate();
-    }
-
-    @Override
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         pw.println(" ScrimController: ");
         pw.print("  state: ");
@@ -1079,6 +1092,69 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, OnCo
         public void onKeyguardVisibilityChanged(boolean showing) {
             mNeedsDrawableColorUpdate = true;
             scheduleUpdate();
+        }
+    }
+    
+    private class SettingsObserver extends ContentObserver {
+        SettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            android.content.ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System.getUriFor(KEY_SCRIM_HEX),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(KEY_SCRIM_ALPHA),
+                    false, this, UserHandle.USER_ALL);
+            update();
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            update();
+        }
+
+        public void update() {
+            android.content.ContentResolver resolver = mContext.getContentResolver();
+
+            String hexString = Settings.System.getStringForUser(resolver,
+                    KEY_SCRIM_HEX, UserHandle.USER_CURRENT);
+
+            int targetColor = DEFAULT_SCRIM_COLOR;
+
+            if (hexString != null) {
+                boolean startsWithHash = hexString.startsWith("#");
+                boolean isValidLength = (hexString.length() == 7) || (hexString.length() == 9);
+
+                if (startsWithHash && isValidLength) {
+                    try {
+                        targetColor = Color.parseColor(hexString);
+                    } catch (IllegalArgumentException e) {
+                        targetColor = DEFAULT_SCRIM_COLOR;
+                    }
+                }
+            }
+            mCustomScrimColor = targetColor;
+
+            int alphaScale = Settings.System.getIntForUser(resolver,
+                    KEY_SCRIM_ALPHA, 216, UserHandle.USER_CURRENT);
+            mCustomScrimAlphaVal = (float) alphaScale / 255f;
+            mDefaultScrimAlpha = mCustomScrimAlphaVal;
+
+            mColors.setMainColor(mCustomScrimColor);
+            mColors.setSecondaryColor(mCustomScrimColor);
+            mColors.setColorPalette(new int[] {mCustomScrimColor});
+
+            boolean isLightColor = ColorUtils.calculateLuminance(mCustomScrimColor) > 0.5;
+            mColors.setSupportsDarkText(isLightColor);
+
+            mNeedsDrawableColorUpdate = true;
+            scheduleUpdate();
+
+            for (ScrimState state : ScrimState.values()) {
+                state.setDefaultScrimAlpha(mDefaultScrimAlpha);
+            }
+            applyAndDispatchExpansion();
         }
     }
 }
