@@ -2393,7 +2393,7 @@ public final class ProcessList {
             ProcessList.killProcessGroup(app.uid, app.pid);
             checkSlow(startTime, "startProcess: done killing old proc");
 
-            Slog.wtf(TAG_PROCESSES, app.toString() + " is attached to a previous process");
+            Slog.v(TAG_PROCESSES, app.toString() + " is attached to a previous process");
             // We are not going to re-use the ProcessRecord, as we haven't dealt with the cleanup
             // routine of it yet, but we'd set it as the precedence of the new process.
             precedence = app;
@@ -2796,7 +2796,7 @@ public final class ProcessList {
             // We are re-adding a persistent process.  Whatevs!  Just leave it there.
             Slog.w(TAG, "Re-adding persistent process " + proc);
         } else if (old != null) {
-            Slog.wtf(TAG, "Already have existing proc " + old + " when adding " + proc);
+            Slog.v(TAG, "Already have existing proc " + old + " when adding " + proc);
         }
         UidRecord uidRec = mActiveUids.get(proc.uid);
         if (uidRec == null) {
