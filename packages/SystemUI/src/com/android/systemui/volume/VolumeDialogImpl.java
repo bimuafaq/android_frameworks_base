@@ -538,6 +538,20 @@ public class VolumeDialogImpl implements VolumeDialog,
         row.slider = row.view.findViewById(R.id.volume_row_slider);
         row.slider.setOnSeekBarChangeListener(new VolumeSeekBarChangeListener(row));
 
+        row.upButton = row.view.findViewById(R.id.volume_row_slider_up);
+        row.upButton.setOnClickListener(v -> {
+            rescheduleTimeoutH();
+            mController.getAudioManager().adjustStreamVolume(row.stream, AudioManager.ADJUST_RAISE, 0);
+            row.userAttempt = 0;
+        });
+
+        row.downButton = row.view.findViewById(R.id.volume_row_slider_down);
+        row.downButton.setOnClickListener(v -> {
+            rescheduleTimeoutH();
+            mController.getAudioManager().adjustStreamVolume(row.stream, AudioManager.ADJUST_LOWER, 0);
+            row.userAttempt = 0;
+        });
+
         row.anim = null;
 
         row.icon = row.view.findViewById(R.id.volume_row_icon);
@@ -1349,6 +1363,19 @@ public class VolumeDialogImpl implements VolumeDialog,
             row.icon.setContentDescription(getStreamLabelH(ss));
         }
 
+        if (row.upButton != null) {
+            row.upButton.setVisibility(isLandscape() ? GONE : VISIBLE);
+            boolean enableUp = !zenMuted;
+            row.upButton.setEnabled(enableUp);
+            row.upButton.setAlpha(enableUp ? 1f : 0.5f);
+        }
+        if (row.downButton != null) {
+            row.downButton.setVisibility(isLandscape() ? GONE : VISIBLE);
+            boolean enableDown = !zenMuted;
+            row.downButton.setEnabled(enableDown);
+            row.downButton.setAlpha(enableDown ? 1f : 0.5f);
+        }
+
         // ensure tracking is disabled if zenMuted
         if (zenMuted) {
             row.tracking = false;
@@ -1384,6 +1411,14 @@ public class VolumeDialogImpl implements VolumeDialog,
         row.slider.setAlpha(((float) alpha) / 255);
         row.icon.setImageTintList(tint);
         row.icon.setImageAlpha(alpha);
+        if (row.upButton != null) {
+            row.upButton.setImageTintList(tint);
+            row.upButton.setImageAlpha(alpha);
+        }
+        if (row.downButton != null) {
+            row.downButton.setImageTintList(tint);
+            row.downButton.setImageAlpha(alpha);
+        }
         row.cachedTint = tint;
     }
 
@@ -1693,6 +1728,8 @@ public class VolumeDialogImpl implements VolumeDialog,
         private View view;
         private TextView header;
         private ImageButton icon;
+        private ImageButton upButton;
+        private ImageButton downButton;
         private SeekBar slider;
         private int stream;
         private StreamState ss;
