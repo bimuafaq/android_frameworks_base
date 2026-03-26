@@ -298,7 +298,7 @@ public final class ServiceState {
 
     public void setStarted(boolean started, int memFactor, long now) {
         if (mOwner == null) {
-            Slog.wtf(TAG, "Starting service " + this + " without owner");
+            Slog.v(TAG, "Starting service " + this + " without owner");
         }
         mStarted = started;
         updateStartedState(memFactor, now);
@@ -336,7 +336,7 @@ public final class ServiceState {
 
     public void setBound(boolean bound, int memFactor, long now) {
         if (mOwner == null) {
-            Slog.wtf(TAG, "Binding service " + this + " without owner");
+            Slog.v(TAG, "Binding service " + this + " without owner");
         }
         final int state = bound ? memFactor : STATE_NOTHING;
         if (mBoundState != state) {
@@ -354,7 +354,7 @@ public final class ServiceState {
 
     public void setExecuting(boolean executing, int memFactor, long now) {
         if (mOwner == null) {
-            Slog.wtf(TAG, "Executing service " + this + " without owner");
+            Slog.v(TAG, "Executing service " + this + " without owner");
         }
         final int state = executing ? memFactor : STATE_NOTHING;
         if (mExecState != state) {
@@ -372,7 +372,7 @@ public final class ServiceState {
 
     public void setForeground(boolean foreground, int memFactor, long now) {
         if (mOwner == null) {
-            Slog.wtf(TAG, "Foregrounding service " + this + " without owner");
+            Slog.v(TAG, "Foregrounding service " + this + " without owner");
         }
         final int state = foreground ? memFactor : STATE_NOTHING;
         if (mForegroundState != state) {

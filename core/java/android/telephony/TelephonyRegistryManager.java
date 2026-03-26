@@ -108,7 +108,7 @@ public class TelephonyRegistryManager {
         IOnSubscriptionsChangedListener callback = new IOnSubscriptionsChangedListener.Stub() {
             @Override
             public void onSubscriptionsChanged () {
-                Log.d(TAG, "onSubscriptionsChangedListener callback received.");
+                Log.v(TAG, "onSubscriptionsChangedListener callback received.");
                 executor.execute(() -> listener.onSubscriptionsChanged());
             }
         };

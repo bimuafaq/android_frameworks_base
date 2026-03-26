@@ -103,7 +103,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class FingerprintService extends BiometricServiceBase {
 
     protected static final String TAG = "FingerprintService";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final String FP_DATA_DIR = "fpdata";
     private static final String ACTION_LOCKOUT_RESET =
             "com.android.server.biometrics.fingerprint.ACTION_LOCKOUT_RESET";
@@ -1093,7 +1093,7 @@ public class FingerprintService extends BiometricServiceBase {
                 updateActiveGroup(ActivityManager.getCurrentUser(), null);
                 doTemplateCleanupForUser(ActivityManager.getCurrentUser());
             } else {
-                Slog.w(TAG, "Failed to open Fingerprint HAL!");
+                Slog.v(TAG, "Failed to open Fingerprint HAL!");
                 MetricsLogger.count(getContext(), "fingerprintd_openhal_error", 1);
                 mDaemon = null;
             }
