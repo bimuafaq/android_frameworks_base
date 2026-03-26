@@ -38,6 +38,17 @@
             android:visibility="gone"
             android:textColor="?android:attr/colorControlNormal"
             android:textAppearance="@style/TextAppearance.Volume.Header" />
+        <com.android.keyguard.AlphaOptimizedImageButton
+            android:id="@+id/volume_row_slider_up"
+            style="@style/VolumeButtons"
+            android:layout_width="@dimen/volume_dialog_tap_target_size"
+            android:layout_height="@dimen/volume_dialog_tap_target_size"
+            android:background="@drawable/ripple_drawable_20dp"
+            android:layout_marginTop="@dimen/volume_dialog_slider_margin_top"
+            android:src="@drawable/ic_add"
+            android:tint="@color/accent_tint_color_selector"
+            android:soundEffectsEnabled="false" />
+
         <FrameLayout
             android:id="@+id/volume_row_slider_frame"
             android:layout_width="match_parent"
@@ -54,6 +65,17 @@
                 android:layout_gravity="center"
                 android:rotation="90" />
         </FrameLayout>
+
+        <com.android.keyguard.AlphaOptimizedImageButton
+            android:id="@+id/volume_row_slider_down"
+            style="@style/VolumeButtons"
+            android:layout_width="@dimen/volume_dialog_tap_target_size"
+            android:layout_height="@dimen/volume_dialog_tap_target_size"
+            android:background="@drawable/ripple_drawable_20dp"
+            android:layout_marginBottom="@dimen/volume_dialog_slider_margin_bottom"
+            android:src="@drawable/ic_remove"
+            android:tint="@color/accent_tint_color_selector"
+            android:soundEffectsEnabled="false" />
 
         <com.android.keyguard.AlphaOptimizedImageButton
             android:id="@+id/volume_row_icon"
