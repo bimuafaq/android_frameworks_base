@@ -121,10 +121,6 @@ public class ShadeControllerImpl implements ShadeController {
             getStatusBar().postHideRecentApps();
         }
 
-        // TODO(b/62444020): remove when this bug is fixed
-        Log.v(TAG, "NotificationShadeWindow: " + getNotificationShadeWindowView()
-                + " canPanelBeCollapsed(): "
-                + getNotificationPanelViewController().canPanelBeCollapsed());
         if (getNotificationShadeWindowView() != null
                 && getNotificationPanelViewController().canPanelBeCollapsed()) {
             // release focus immediately to kick off focus change transition
