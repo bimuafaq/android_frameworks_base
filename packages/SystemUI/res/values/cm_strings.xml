@@ -145,7 +145,4 @@
     <string name="force_stop_dlg_title">Force stop?</string>
     <string name="force_stop_dlg_text">If you force stop an app, it may misbehave.</string>
     <string name="guts_force_close_app">Force stop</string>
-
-    <!-- Floater -->
-    <string name="quick_settings_floater_label">Airplane Floater</string>
 </resources>

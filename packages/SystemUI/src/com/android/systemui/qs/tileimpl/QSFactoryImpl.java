@@ -61,7 +61,6 @@ import com.android.systemui.qs.tiles.VolumeTile;
 import com.android.systemui.qs.tiles.VpnTile;
 import com.android.systemui.qs.tiles.WifiTile;
 import com.android.systemui.qs.tiles.WorkModeTile;
-import com.android.systemui.qs.tiles.AirplaneFloaterTile;
 import com.android.systemui.util.leak.GarbageMonitor;
 
 import javax.inject.Inject;
@@ -110,7 +109,6 @@ public class QSFactoryImpl implements QSFactory {
     private final Provider<VpnTile> mVpnTileProvider;
     private final Provider<AntiFlickerTile> mAntiFlickerTileProvider;
     private final Provider<RebootTile> mRebootTileProvider;
-    private final Provider<AirplaneFloaterTile> mAirplaneFloaterTileProvider;
 
     private final Lazy<QSHost> mQsHostLazy;
 
@@ -150,8 +148,7 @@ public class QSFactoryImpl implements QSFactory {
             Provider<VolumeTile> volumeTileProvider,
             Provider<VpnTile> vpnTileProvider,
             Provider<AntiFlickerTile> antiFlickerTileProvider,
-            Provider<RebootTile> rebootTileProvider,
-            Provider<AirplaneFloaterTile> airplaneFloaterTileProvider) {
+            Provider<RebootTile> rebootTileProvider) {
         mQsHostLazy = qsHostLazy;
         mWifiTileProvider = wifiTileProvider;
         mBluetoothTileProvider = bluetoothTileProvider;
@@ -188,7 +185,6 @@ public class QSFactoryImpl implements QSFactory {
         mVpnTileProvider = vpnTileProvider;
         mAntiFlickerTileProvider = antiFlickerTileProvider;
         mRebootTileProvider = rebootTileProvider;
-        mAirplaneFloaterTileProvider = airplaneFloaterTileProvider;
     }
 
     public QSTile createTile(String tileSpec) {
@@ -271,8 +267,6 @@ public class QSFactoryImpl implements QSFactory {
                 return mAntiFlickerTileProvider.get();
             case "reboot":
                 return mRebootTileProvider.get();
-            case "floater":
-                return mAirplaneFloaterTileProvider.get();
         }
 
         // Custom tiles
