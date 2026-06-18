@@ -2232,6 +2232,20 @@ public final class PowerManagerService extends SystemService
     }
 
     private void updateSmartChargingStatus() {
+        // Reset suspended state when charger is disconnected to prevent
+        // stale state from blocking charging on next plug event
+        if (!mIsPowered) {
+            if (mPowerInputSuspended) {
+                try {
+                    FileUtils.stringToFile(mPowerInputSupsendSysfsNode, mPowerInputResumeValue);
+                    mPowerInputSuspended = false;
+                } catch (IOException e) {
+                    Slog.e(TAG, "failed to write to " + mPowerInputSupsendSysfsNode);
+                }
+            }
+            return;
+        }
+
         if (mPowerInputSuspended && (mBatteryLevel <= mSmartChargingResumeLevel) ||
             (mPowerInputSuspended && !mSmartChargingEnabled)) {
             try {
