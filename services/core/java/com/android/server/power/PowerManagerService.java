@@ -1073,6 +1073,7 @@ public final class PowerManagerService extends SystemService
             mNativeWrapper.nativeSetAutoSuspend(false);
             mNativeWrapper.nativeSetInteractive(true);
             mNativeWrapper.nativeSetFeature(POWER_FEATURE_DOUBLE_TAP_TO_WAKE, 0);
+            SystemProperties.set("persist.sys.double_tap_wake", "0");
             mInjector.invalidateIsInteractiveCaches();
         }
     }
@@ -1403,6 +1404,8 @@ public final class PowerManagerService extends SystemService
                             UserHandle.USER_CURRENT) != 0;
             if (doubleTapWakeEnabled != mDoubleTapWakeEnabled) {
                 mDoubleTapWakeEnabled = doubleTapWakeEnabled;
+                SystemProperties.set("persist.sys.double_tap_wake",
+                        mDoubleTapWakeEnabled ? "1" : "0");
                 mNativeWrapper.nativeSetFeature(
                         POWER_FEATURE_DOUBLE_TAP_TO_WAKE, mDoubleTapWakeEnabled ? 1 : 0);
             }
