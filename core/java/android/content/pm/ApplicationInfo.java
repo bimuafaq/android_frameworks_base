@@ -33,6 +33,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.UserHandle;
 import android.os.storage.StorageManager;
+import android.util.DeviceCompatConfig;
 import android.util.Printer;
 import android.util.SparseArray;
 import android.util.proto.ProtoOutputStream;
@@ -1920,6 +1921,11 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
     }
 
     private boolean isPackageWhitelistedForHiddenApis() {
+        // [Compat] grant hidden API access to system apps when signature is flexible
+        if (DeviceCompatConfig.isSignatureFlexible()
+                && (isSystemApp() || isUpdatedSystemApp())) {
+            return true;
+        }
         return SystemConfig.getInstance().getHiddenApiWhitelistedApps().contains(packageName);
     }
 

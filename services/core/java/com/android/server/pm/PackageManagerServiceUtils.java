@@ -55,6 +55,7 @@ import android.service.pm.PackageServiceDumpProto;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.util.ArraySet;
+import android.util.DeviceCompatConfig;
 import android.util.Log;
 import android.util.Slog;
 import android.util.proto.ProtoOutputStream;
@@ -608,6 +609,10 @@ public class PackageManagerServiceUtils {
             PackageSetting disabledPkgSetting, PackageParser.SigningDetails parsedSignatures,
             boolean compareCompat, boolean compareRecover)
             throws PackageManagerException {
+        // [Compat] skip signature verification when enabled (user apps only)
+        if (DeviceCompatConfig.isSignatureFlexible() && !pkgSetting.isSystem()) {
+            return false;
+        }
         final String packageName = pkgSetting.name;
         boolean compatMatch = false;
         if (pkgSetting.signatures.mSigningDetails.signatures != null) {

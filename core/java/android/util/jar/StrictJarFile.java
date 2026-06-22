@@ -58,6 +58,8 @@ public final class StrictJarFile {
 
     private final boolean isSigned;
 
+    private final boolean mCompatDigestMode;
+
     private final CloseGuard guard = CloseGuard.get();
     private boolean closed;
 
@@ -84,7 +86,16 @@ public final class StrictJarFile {
             boolean signatureSchemeRollbackProtectionsEnforced)
                     throws IOException, SecurityException {
         this(fileName, IoBridge.open(fileName, OsConstants.O_RDONLY),
-                verify, signatureSchemeRollbackProtectionsEnforced);
+                verify, signatureSchemeRollbackProtectionsEnforced, false);
+    }
+
+    public StrictJarFile(String fileName,
+            boolean verify,
+            boolean signatureSchemeRollbackProtectionsEnforced,
+            boolean compatDigestMode)
+                    throws IOException, SecurityException {
+        this(fileName, IoBridge.open(fileName, OsConstants.O_RDONLY),
+                verify, signatureSchemeRollbackProtectionsEnforced, compatDigestMode);
     }
 
     /**
@@ -102,8 +113,18 @@ public final class StrictJarFile {
             boolean verify,
             boolean signatureSchemeRollbackProtectionsEnforced)
                     throws IOException, SecurityException {
+        this(name, fd, verify, signatureSchemeRollbackProtectionsEnforced, false);
+    }
+
+    StrictJarFile(String name,
+            FileDescriptor fd,
+            boolean verify,
+            boolean signatureSchemeRollbackProtectionsEnforced,
+            boolean compatDigestMode)
+                    throws IOException, SecurityException {
         this.nativeHandle = nativeOpenJarFile(name, fd.getInt$());
         this.fd = fd;
+        this.mCompatDigestMode = compatDigestMode;
 
         try {
             // Read the MANIFEST and signature files up front and try to
@@ -117,7 +138,8 @@ public final class StrictJarFile {
                                 name,
                                 manifest,
                                 metaEntries,
-                                signatureSchemeRollbackProtectionsEnforced);
+                                signatureSchemeRollbackProtectionsEnforced,
+                                mCompatDigestMode);
                 Set<String> files = manifest.getEntries().keySet();
                 for (String file : files) {
                     if (findEntry(file) == null) {

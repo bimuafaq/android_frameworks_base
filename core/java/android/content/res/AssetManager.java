@@ -30,6 +30,7 @@ import android.content.res.Configuration.NativeConfig;
 import android.content.res.loader.ResourcesLoader;
 import android.os.ParcelFileDescriptor;
 import android.util.ArraySet;
+import android.util.DeviceCompatConfig;
 import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
@@ -828,6 +829,10 @@ public final class AssetManager implements AutoCloseable {
      * @hide
      */
     public boolean containsAllocatedTable() {
+        // [Compat] bypass allocated table check when digest compat is enabled
+        if (DeviceCompatConfig.isDigestEnabled()) {
+            return false;
+        }
         synchronized (this) {
             ensureValidLocked();
             return nativeContainsAllocatedTable(mObject);
