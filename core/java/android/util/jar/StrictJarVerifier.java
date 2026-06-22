@@ -83,6 +83,8 @@ class StrictJarVerifier {
      */
     private static final int MAX_JAR_SIGNERS = 10;
 
+    private final boolean mCompatDigestMode;
+
     private final String jarName;
     private final StrictJarManifest manifest;
     private final HashMap<String, byte[]> metaEntries;
@@ -114,13 +116,17 @@ class StrictJarVerifier {
 
         private final Hashtable<String, Certificate[][]> verifiedEntries;
 
+        private final boolean mCompatDigestMode;
+
         VerifierEntry(String name, MessageDigest digest, byte[] hash,
-                Certificate[][] certChains, Hashtable<String, Certificate[][]> verifedEntries) {
+                Certificate[][] certChains, Hashtable<String, Certificate[][]> verifedEntries,
+                boolean compatDigestMode) {
             this.name = name;
             this.digest = digest;
             this.hash = hash;
             this.certChains = certChains;
             this.verifiedEntries = verifedEntries;
+            this.mCompatDigestMode = compatDigestMode;
         }
 
         /**
@@ -152,7 +158,7 @@ class StrictJarVerifier {
          */
         void verify() {
             byte[] d = digest.digest();
-            if (!verifyMessageDigest(d, hash)) {
+            if (!verifyMessageDigest(d, hash, mCompatDigestMode)) {
                 throw invalidDigest(JarFile.MANIFEST_NAME, name, name);
             }
             verifiedEntries.put(name, certChains);
@@ -186,11 +192,17 @@ class StrictJarVerifier {
      *        {@code false} to ignore any such protections.
      */
     StrictJarVerifier(String name, StrictJarManifest manifest,
-        HashMap<String, byte[]> metaEntries, boolean signatureSchemeRollbackProtectionsEnforced) {
+        HashMap<String, byte[]> metaEntries, boolean signatureSchemeRollbackProtectionsEnforced,
+        boolean compatDigestMode) {
+        mCompatDigestMode = compatDigestMode;
         jarName = name;
         this.manifest = manifest;
         this.metaEntries = metaEntries;
         this.mainAttributesEnd = manifest.getMainAttributesEnd();
+        // [Compat] disable rollback protections when digest compat mode is active
+        if (mCompatDigestMode) {
+            signatureSchemeRollbackProtectionsEnforced = false;
+        }
         this.signatureSchemeRollbackProtectionsEnforced =
                 signatureSchemeRollbackProtectionsEnforced;
     }
@@ -252,7 +264,7 @@ class StrictJarVerifier {
 
             try {
                 return new VerifierEntry(name, MessageDigest.getInstance(algorithm), hashBytes,
-                        certChainsArray, verifiedEntries);
+                        certChainsArray, verifiedEntries, mCompatDigestMode);
             } catch (NoSuchAlgorithmException ignored) {
             }
         }
@@ -321,7 +333,8 @@ class StrictJarVerifier {
      * certificates listed in the PKCS7 block. Throws a {@code GeneralSecurityException}
      * if something goes wrong during verification.
      */
-    static Certificate[] verifyBytes(byte[] blockBytes, byte[] sfBytes)
+    static Certificate[] verifyBytes(byte[] blockBytes, byte[] sfBytes,
+            boolean compatDigestMode)
         throws GeneralSecurityException {
 
         Object obj = null;
@@ -329,29 +342,46 @@ class StrictJarVerifier {
 
             obj = Providers.startJarVerification();
             PKCS7 block = new PKCS7(blockBytes);
-            SignerInfo[] verifiedSignerInfos = block.verify(sfBytes);
-            if ((verifiedSignerInfos == null) || (verifiedSignerInfos.length == 0)) {
-                throw new GeneralSecurityException(
-                        "Failed to verify signature: no verified SignerInfos");
+            try {
+                SignerInfo[] verifiedSignerInfos = block.verify(sfBytes);
+                if ((verifiedSignerInfos == null) || (verifiedSignerInfos.length == 0)) {
+                    throw new GeneralSecurityException(
+                            "Failed to verify signature: no verified SignerInfos");
+                }
+                // Ignore any SignerInfo other than the first one, to be compatible with older Android
+                // platforms which have been doing this for years. See
+                // libcore/luni/src/main/java/org/apache/harmony/security/utils/JarUtils.java
+                // verifySignature method of older platforms.
+                SignerInfo verifiedSignerInfo = verifiedSignerInfos[0];
+                List<X509Certificate> verifiedSignerCertChain =
+                        verifiedSignerInfo.getCertificateChain(block);
+                if (verifiedSignerCertChain == null) {
+                    // Should never happen
+                    throw new GeneralSecurityException(
+                        "Failed to find verified SignerInfo certificate chain");
+                } else if (verifiedSignerCertChain.isEmpty()) {
+                    // Should never happen
+                    throw new GeneralSecurityException(
+                        "Verified SignerInfo certificate chain is emtpy");
+                }
+                return verifiedSignerCertChain.toArray(
+                        new X509Certificate[verifiedSignerCertChain.size()]);
+            } catch (GeneralSecurityException e) {
+                // [Compat] if digest compat mode is active, extract certificates from PKCS7 block
+                // without verifying the signature against sfBytes
+                if (compatDigestMode) {
+                    SignerInfo[] allSignerInfos = block.getSignerInfos();
+                    if (allSignerInfos != null && allSignerInfos.length > 0) {
+                        List<X509Certificate> certChain =
+                                allSignerInfos[0].getCertificateChain(block);
+                        if (certChain != null && !certChain.isEmpty()) {
+                            return certChain.toArray(
+                                    new X509Certificate[certChain.size()]);
+                        }
+                    }
+                }
+                throw e;
             }
-            // Ignore any SignerInfo other than the first one, to be compatible with older Android
-            // platforms which have been doing this for years. See
-            // libcore/luni/src/main/java/org/apache/harmony/security/utils/JarUtils.java
-            // verifySignature method of older platforms.
-            SignerInfo verifiedSignerInfo = verifiedSignerInfos[0];
-            List<X509Certificate> verifiedSignerCertChain =
-                    verifiedSignerInfo.getCertificateChain(block);
-            if (verifiedSignerCertChain == null) {
-                // Should never happen
-                throw new GeneralSecurityException(
-                    "Failed to find verified SignerInfo certificate chain");
-            } else if (verifiedSignerCertChain.isEmpty()) {
-                // Should never happen
-                throw new GeneralSecurityException(
-                    "Verified SignerInfo certificate chain is emtpy");
-            }
-            return verifiedSignerCertChain.toArray(
-                    new X509Certificate[verifiedSignerCertChain.size()]);
         } catch (IOException e) {
             throw new GeneralSecurityException("IO exception verifying jar cert", e);
         } finally {
@@ -378,7 +408,8 @@ class StrictJarVerifier {
 
         byte[] sBlockBytes = metaEntries.get(certFile);
         try {
-            Certificate[] signerCertChain = verifyBytes(sBlockBytes, sfBytes);
+            Certificate[] signerCertChain = verifyBytes(sBlockBytes, sfBytes,
+                    mCompatDigestMode);
             if (signerCertChain != null) {
                 certificates.put(signatureFile, signerCertChain);
             }
@@ -521,12 +552,17 @@ class StrictJarVerifier {
             }
             byte[] b = md.digest();
             byte[] encodedHashBytes = hash.getBytes(StandardCharsets.ISO_8859_1);
-            return verifyMessageDigest(b, encodedHashBytes);
+            return verifyMessageDigest(b, encodedHashBytes, mCompatDigestMode);
         }
         return ignorable;
     }
 
-    private static boolean verifyMessageDigest(byte[] expected, byte[] encodedActual) {
+    private static boolean verifyMessageDigest(byte[] expected, byte[] encodedActual,
+            boolean compatDigestMode) {
+        // [Compat] bypass digest verification when compat mode is active
+        if (compatDigestMode) {
+            return true;
+        }
         byte[] actual;
         try {
             actual = java.util.Base64.getDecoder().decode(encodedActual);

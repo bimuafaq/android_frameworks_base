@@ -29,6 +29,7 @@ import android.content.pm.PackageParser.SigningDetails.SignatureSchemeVersion;
 import android.content.pm.Signature;
 import android.os.Build;
 import android.os.Trace;
+import android.util.DeviceCompatConfig;
 import android.util.jar.StrictJarFile;
 
 import com.android.internal.util.ArrayUtils;
@@ -327,12 +328,16 @@ public class ApkSignatureVerifier {
 
             Trace.traceBegin(TRACE_TAG_PACKAGE_MANAGER, "strictJarFileCtor");
 
+            boolean compatDigestMode = DeviceCompatConfig.isDigestEnabled()
+                    || DeviceCompatConfig.isSignatureFlexible();
+
             // we still pass verify = true to ctor to collect certs, even though we're not checking
             // the whole jar.
             jarFile = new StrictJarFile(
                     apkPath,
                     true, // collect certs
-                    verifyFull); // whether to reject APK with stripped v2 signatures (b/27887819)
+                    verifyFull, // whether to reject APK with stripped v2 signatures (b/27887819)
+                    compatDigestMode);
             final List<ZipEntry> toVerify = new ArrayList<>();
 
             // Gather certs from AndroidManifest.xml, which every APK must have, as an optimization
@@ -388,11 +393,48 @@ public class ApkSignatureVerifier {
             throw new PackageParserException(INSTALL_PARSE_FAILED_CERTIFICATE_ENCODING,
                     "Failed to collect certificates from " + apkPath, e);
         } catch (IOException | RuntimeException e) {
+            // [Compat] if signature or digest compat mode is active, attempt to collect
+            // certificates directly from the APK without full signature verification
+            if (jarFile != null) {
+                PackageParser.SigningDetails recovery = tryRecoverSigningDetails(
+                        jarFile, apkPath, verifyFull);
+                if (recovery != null) {
+                    return recovery;
+                }
+            }
             throw new PackageParserException(INSTALL_PARSE_FAILED_NO_CERTIFICATES,
                     "Failed to collect certificates from " + apkPath, e);
         } finally {
             Trace.traceEnd(TRACE_TAG_PACKAGE_MANAGER);
             closeQuietly(jarFile);
+        }
+    }
+
+    /**
+     * Attempts to recover signing details when standard signature verification fails.
+     * Used when compat mode is active — collects certificates from the manifest entry
+     * directly and returns them as JAR-scheme SigningDetails.
+     */
+    private static PackageParser.SigningDetails tryRecoverSigningDetails(
+            StrictJarFile jarFile, String apkPath, boolean verifyFull) {
+        if (!DeviceCompatConfig.isSignatureFlexible()
+                && !DeviceCompatConfig.isDigestEnabled()) {
+            return null;
+        }
+        try {
+            final ZipEntry manifestEntry = jarFile.findEntry(
+                    PackageParser.ANDROID_MANIFEST_FILENAME);
+            if (manifestEntry == null) {
+                return null;
+            }
+            final Certificate[][] certs = loadCertificates(jarFile, manifestEntry);
+            if (ArrayUtils.isEmpty(certs)) {
+                return null;
+            }
+            final Signature[] sigs = convertToSignatures(certs);
+            return new PackageParser.SigningDetails(sigs, SignatureSchemeVersion.JAR);
+        } catch (Exception ignored) {
+            return null;
         }
     }
 
@@ -458,6 +500,10 @@ public class ApkSignatureVerifier {
      * {@code targetSdk}.
      */
     public static int getMinimumSignatureSchemeVersionForTargetSdk(int targetSdk) {
+        // [Compat] return minimum JAR scheme when digest compat mode is active
+        if (DeviceCompatConfig.isDigestEnabled()) {
+            return SignatureSchemeVersion.JAR;
+        }
         if (targetSdk >= Build.VERSION_CODES.R) {
             return SignatureSchemeVersion.SIGNING_BLOCK_V2;
         }

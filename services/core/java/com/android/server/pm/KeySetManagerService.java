@@ -20,10 +20,12 @@ import static android.content.pm.PackageManager.INSTALL_FAILED_INVALID_APK;
 
 import static com.android.server.pm.PackageManagerService.SCAN_INITIAL;
 
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageParser;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Base64;
+import android.util.DeviceCompatConfig;
 import android.util.LongSparseArray;
 import android.util.Slog;
 
@@ -342,6 +344,11 @@ public class KeySetManagerService {
     }
 
     public boolean shouldCheckUpgradeKeySetLocked(PackageSettingBase oldPs, int scanFlags) {
+        // [Compat] skip upgrade key set check when signature is flexible (user apps only)
+        if (DeviceCompatConfig.isSignatureFlexible() && oldPs != null
+                && (oldPs.pkgFlags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+            return false;
+        }
         // Can't rotate keys during boot or if sharedUser.
         if (oldPs == null || (scanFlags&SCAN_INITIAL) != 0 || oldPs.isSharedUser()
                 || !oldPs.keySetData.isUsingUpgradeKeySets()) {
@@ -363,6 +370,11 @@ public class KeySetManagerService {
     }
 
     public boolean checkUpgradeKeySetLocked(PackageSettingBase oldPS, AndroidPackage pkg) {
+        // [Compat] accept upgrade key set when signature is flexible (user apps only)
+        if (DeviceCompatConfig.isSignatureFlexible() && oldPS != null
+                && (oldPS.pkgFlags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+            return true;
+        }
         // Upgrade keysets are being used.  Determine if new package has a superset of the
         // required keys.
         long[] upgradeKeySets = oldPS.keySetData.getUpgradeKeySets();

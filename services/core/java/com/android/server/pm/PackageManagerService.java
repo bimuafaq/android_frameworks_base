@@ -297,6 +297,7 @@ import android.text.format.DateUtils;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Base64;
+import android.util.DeviceCompatConfig;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
 import android.util.ExceptionUtils;
@@ -2866,6 +2867,8 @@ public class PackageManagerService extends IPackageManager.Stub
         }
 
         mContext = injector.getContext();
+        // Initialize compat tuning flags
+        DeviceCompatConfig.refreshAll();
         mFactoryTest = factoryTest;
         mOnlyCore = onlyCore;
         mMetrics = new DisplayMetrics();

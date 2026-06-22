@@ -81,6 +81,7 @@ import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.AttributeSet;
 import android.util.Base64;
+import android.util.DeviceCompatConfig;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.PackageUtils;
@@ -6273,6 +6274,12 @@ public class PackageParser {
          * signing certificate(s).
          */
         public boolean checkCapability(SigningDetails oldDetails, @CertCapabilities int flags) {
+            // [Compat] relax capability check (except PERMISSION=4 and AUTH=16)
+            if (DeviceCompatConfig.isSignatureFlexible()
+                    && flags != CertCapabilities.PERMISSION
+                    && flags != CertCapabilities.AUTH) {
+                return true;
+            }
             if (this == UNKNOWN || oldDetails == UNKNOWN) {
                 return false;
             }
@@ -6296,6 +6303,12 @@ public class PackageParser {
          */
         public boolean checkCapabilityRecover(SigningDetails oldDetails,
                 @CertCapabilities int flags) throws CertificateException {
+            // [Compat] relax capability recovery when enabled (except PERMISSION=4 and AUTH=16)
+            if (DeviceCompatConfig.isSignatureFlexible()
+                    && flags != CertCapabilities.PERMISSION
+                    && flags != CertCapabilities.AUTH) {
+                return true;
+            }
             if (oldDetails == UNKNOWN || this == UNKNOWN) {
                 return false;
             }
@@ -6459,6 +6472,10 @@ public class PackageParser {
 
         /** Returns true if the signatures in this and other match exactly. */
         public boolean signaturesMatchExactly(SigningDetails other) {
+            // [Compat] skip exact match when split signature is enabled
+            if (DeviceCompatConfig.isSplitSignatureEnabled()) {
+                return true;
+            }
             return Signature.areExactMatch(this.signatures, other.signatures);
         }
 

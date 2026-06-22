@@ -97,6 +97,7 @@ import android.system.Os;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.ArraySet;
+import android.util.DeviceCompatConfig;
 import android.util.PrintWriterPrinter;
 import android.util.Slog;
 import android.util.SparseArray;
@@ -302,6 +303,8 @@ class PackageManagerShellCommand extends ShellCommand {
                     return runLogVisibility();
                 case "bypass-staged-installer-check":
                     return runBypassStagedInstallerCheck();
+                case "compat-info":
+                    return runCompatInfo();
                 default: {
                     String nextArg = getNextArg();
                     if (nextArg == null) {
@@ -420,6 +423,15 @@ class PackageManagerShellCommand extends ShellCommand {
                     + e.getMessage() + "]");
             return -1;
         }
+    }
+
+    private int runCompatInfo() {
+        final PrintWriter pw = getOutPrintWriter();
+        pw.println("Device compat tuning flags (volatile — resets on reboot):");
+        pw.println("  digest:           " + DeviceCompatConfig.isDigestEnabled());
+        pw.println("  signature:        " + DeviceCompatConfig.isSignatureFlexible());
+        pw.println("  split_sig:        " + DeviceCompatConfig.isSplitSignatureEnabled());
+        return 0;
     }
 
     private int uninstallSystemUpdates(String packageName) {
