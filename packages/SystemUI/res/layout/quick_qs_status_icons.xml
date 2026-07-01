@@ -29,16 +29,33 @@
     android:focusable="true"
     android:theme="@style/QSHeaderTheme">
 
-    <com.android.systemui.statusbar.policy.DateView
-        android:id="@+id/date"
+    <!-- Clock + Date — self-contained, animates itself -->
+    <com.android.systemui.qs.ClockDateContainer
+        android:id="@+id/clock_date_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="start|center_vertical"
+        android:layout_gravity="center_vertical"
         android:gravity="center_vertical"
-        android:singleLine="true"
-        android:textSize="14sp"
-        android:textAppearance="@style/TextAppearance.QS.Status"
-        systemui:datePattern="@string/abbrev_wday_month_day_no_year_alarm" />
+        android:orientation="horizontal">
+
+        <com.android.systemui.statusbar.policy.Clock
+            android:id="@+id/clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:singleLine="true"
+            android:textAppearance="@style/TextAppearance.QS.Status"
+            systemui:showDark="false" />
+
+        <com.android.systemui.statusbar.policy.DateView
+            android:id="@+id/date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textSize="14sp"
+            android:textAppearance="@style/TextAppearance.QS.Status"
+            systemui:datePattern="@string/abbrev_wday_month_day_no_year_alarm" />
+    </com.android.systemui.qs.ClockDateContainer>
 
     <com.android.systemui.statusbar.phone.StatusIconContainer
         android:id="@+id/statusIcons"

@@ -128,6 +128,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
     private View mQuickQsStatusIcons;
     private View mHeaderTextContainerView;
 
+
+    private ClockDateContainer mClockDateContainer;
     private Clock mClockView;
     private OngoingPrivacyChip mPrivacyChip;
     private Space mSpace;
@@ -241,7 +243,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
         // Set the correct tint for the status icons so they contrast
         mIconManager.setTint(fillColor);
 
-        mClockView = findViewById(R.id.clock);
+        mClockDateContainer = findViewById(R.id.clock_date_container);
+        mClockView = mClockDateContainer.getClockView();
         mClockView.setOnClickListener(this);
         mSpace = findViewById(R.id.space);
 
@@ -382,7 +385,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
 
     private void updateStatusIconAlphaAnimator() {
         mStatusIconsAlphaAnimator = new TouchAnimator.Builder()
-                .addFloat(mQuickQsStatusIcons, "alpha", 1, 0, 0)
+                .addFloat(findViewById(R.id.statusIcons), "alpha", 1, 0, 0)
+                .addFloat(findViewById(R.id.batteryRemainingIcon), "alpha", 1, 0, 0)
                 .build();
     }
 
@@ -439,6 +443,12 @@ public class QuickStatusBarHeader extends RelativeLayout implements
         if (mPrivacyChipAlphaAnimator != null) {
             mPrivacyChip.setExpanded(expansionFraction > 0.5);
             mPrivacyChipAlphaAnimator.setPosition(keyguardExpansionFraction);
+        }
+        if (mClockDateContainer != null) {
+            if (keyguardExpansionFraction >= 0 && keyguardExpansionFraction <= 1f
+                    && !Float.isNaN(keyguardExpansionFraction)) {
+                mClockDateContainer.setExpansion(keyguardExpansionFraction);
+            }
         }
         if (mIsQuickQsBrightnessEnabled) {
             if (keyguardExpansionFraction > 0) {
