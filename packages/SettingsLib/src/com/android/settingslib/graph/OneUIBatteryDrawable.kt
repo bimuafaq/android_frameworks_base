@@ -23,19 +23,19 @@ import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import com.android.settingslib.R
 import com.android.settingslib.Utils
+import kotlin.math.floor
 
 class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
 
     private val perimeterPath = Path()
     private val scaledPerimeter = Path()
-    private val fillMask = Path()
-    private val scaledFill = Path()
     private val fillRect = RectF()
     private val levelRect = RectF()
     private val levelPath = Path()
+    private val textPath = Path()
     private val unifiedPath = Path()
+    private val alphaPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val scaleMatrix = Matrix()
-    private val padding = Rect()
 
     private var intrinsicHeight: Int
     private var intrinsicWidth: Int
@@ -47,9 +47,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
 
     private var colorLevels: IntArray
     private var fillColor: Int = Color.WHITE
-    private var backgroundColor: Int = Color.WHITE
     private var levelColor: Int = Color.WHITE
-    private var dualTone = true
     private var batteryLevel = 0
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
@@ -150,55 +148,42 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
     }
-    
-    fun getBatteryLevel(): Int {
-        return batteryLevel
-    }
+
+    fun getBatteryLevel(): Int = batteryLevel
 
     override fun draw(c: Canvas) {
         if (batteryLevel == -1) return
-        val alphaPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         alphaPaint.alpha = drawableAlpha
         c.saveLayer(null, alphaPaint)
         unifiedPath.reset()
         levelPath.reset()
         levelRect.set(fillRect)
-        
+
         val fillFraction = batteryLevel / 100f
         val fillTop = if (batteryLevel >= 95) fillRect.right
-        else fillRect.right - (fillRect.width() * (1 - fillFraction))
+        else fillRect.right - fillRect.width() * (1 - fillFraction)
 
-        levelRect.right = Math.floor(fillTop.toDouble()).toFloat()
+        levelRect.right = floor(fillTop)
         levelPath.addRect(levelRect, Path.Direction.CCW)
-
         unifiedPath.addPath(scaledPerimeter)
-        
-        if (!dualTone) {
-            unifiedPath.op(levelPath, Path.Op.UNION)
-        }
         fillPaint.color = levelColor
-
-        val mergedPath = Path()
-        mergedPath.reset()
 
         val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
         textPaint.textSize = baseTextSize * scaleFactor
 
         val textY = bounds.centerY() - (textPaint.fontMetrics.descent + textPaint.fontMetrics.ascent) / 2
         val textX = bounds.width() * 0.5f
-        
-        val textPath = Path()
+
+        textPath.reset()
         if (mShowPercent) {
-             textPaint.getTextPath(
+            textPaint.getTextPath(
                 batteryLevel.toString(), 0, batteryLevel.toString().length, textX, textY, textPath
             )
-            mergedPath.addPath(textPath)
         }
-        
+
         unifiedPath.op(textPath, Path.Op.DIFFERENCE)
-        
         c.drawPath(unifiedPath, dualToneBackgroundFill)
-        
+
         c.save()
         c.clipRect(
             bounds.left.toFloat(),
@@ -228,21 +213,14 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
             thresh = colorLevels[i]
             color = colorLevels[i + 1]
             if (level <= thresh) {
-                return if (i == colorLevels.size - 2) {
-                    fillColor
-                } else {
-                    color
-                }
+                return if (i == colorLevels.size - 2) fillColor else color
             }
             i += 2
         }
         return color
     }
 
-    override fun setAlpha(alpha: Int) {
-        drawableAlpha = alpha
-        invalidateSelf()
-    }
+    override fun setAlpha(alpha: Int) { drawableAlpha = alpha; invalidateSelf() }
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
         fillPaint.colorFilter = colorFilter
@@ -258,12 +236,8 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         updateSize()
     }
 
-    fun setPadding(left: Int, top: Int, right: Int, bottom: Int) {
-        updateSize()
-    }
-
     fun setColors(fgColor: Int, bgColor: Int, singleToneColor: Int) {
-        fillColor = if (dualTone) fgColor else singleToneColor
+        fillColor = fgColor
         fillPaint.color = fillColor
         dualToneBackgroundFill.color = 0xFFB1B1B1.toInt()
         dualToneBackgroundFill.alpha = 255
@@ -273,24 +247,18 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
 
     private fun updateSize() {
         val b = bounds
-        if (b.isEmpty) {
-            scaleMatrix.setScale(1f, 1f)
-        } else {
-            val sx = b.right / baseWidth
-            val sy = b.bottom / baseHeight
-            scaleMatrix.setScale(sx, sy)
-        }
+        scaleMatrix.setScale(
+            if (b.isEmpty) 1f else b.right / baseWidth,
+            if (b.isEmpty) 1f else b.bottom / baseHeight
+        )
         perimeterPath.transform(scaleMatrix, scaledPerimeter)
-        fillMask.transform(scaleMatrix, scaledFill)
-        scaledFill.computeBounds(fillRect, true)
+        scaledPerimeter.computeBounds(fillRect, true)
     }
 
     private fun loadPaths() {
-        val radius = baseRadius        
+        val radius = baseRadius
         perimeterPath.addRoundRect(RectF(0f, 0f, baseWidth, baseHeight), radius, radius, Path.Direction.CW)
-        fillMask.addRoundRect(RectF(0f, 0f, baseWidth, baseHeight), radius, radius, Path.Direction.CW)
-        fillMask.computeBounds(fillRect, true)
-        dualTone = true
+        scaledPerimeter.computeBounds(fillRect, true)
     }
 
     companion object {

@@ -23,20 +23,19 @@ import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import com.android.settingslib.R
 import com.android.settingslib.Utils
+import kotlin.math.floor
 
 class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
 
     private val perimeterPath = Path()
     private val scaledPerimeter = Path()
-    private val fillMask = Path()
-    private val scaledFill = Path()
     private val fillRect = RectF()
     private val levelRect = RectF()
     private val levelPath = Path()
-    private val unifiedPath = Path()
+    private val textPath = Path()
+    private val alphaPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val scaleMatrix = Matrix()
-    private val padding = Rect()
-    
+
     private val buttonPath = Path()
     private val scaledButton = Path()
 
@@ -47,17 +46,12 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
     private var baseHeight: Float = 0f
     private var baseTextSize: Float = 0f
     private var baseRadius: Float = 0f
-    
-    private var gap: Float = 0f
+
     private var bodyWidth: Float = 0f
-    private var buttonWidth: Float = 0f
-    private var buttonHeight: Float = 0f
 
     private var colorLevels: IntArray
     private var fillColor: Int = Color.WHITE
-    private var backgroundColor: Int = Color.WHITE
     private var levelColor: Int = Color.WHITE
-    private var dualTone = true
     private var batteryLevel = 0
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
@@ -158,34 +152,27 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
     }
-    
-    fun getBatteryLevel(): Int {
-        return batteryLevel
-    }
+
+    fun getBatteryLevel(): Int = batteryLevel
 
     override fun draw(c: Canvas) {
         if (batteryLevel == -1) return
-        val alphaPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         alphaPaint.alpha = drawableAlpha
         c.saveLayer(null, alphaPaint)
-        
-        unifiedPath.reset()
+
         levelPath.reset()
+        textPath.reset()
         levelRect.set(fillRect)
-        
+
         val fillFraction = batteryLevel / 100f
         val fillRight = fillRect.right * fillFraction
 
-        levelRect.right = Math.floor(fillRight.toDouble()).toFloat()
+        levelRect.right = floor(fillRight)
         levelPath.addRect(levelRect, Path.Direction.CCW)
 
-        // Setup Text Path for "DIFFERENCE" logic
-        val textPath = Path()
-        val bodyRect = RectF()
-        scaledPerimeter.computeBounds(bodyRect, true)
-        val cx = bodyRect.centerX()
-        val cy = bodyRect.centerY()
-        
+        val cx = fillRect.centerX()
+        val cy = fillRect.centerY()
+
         if (mShowPercent && batteryLevel != 100) {
             val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
             textPaint.textSize = baseTextSize * scaleFactor
@@ -193,22 +180,22 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
             textPaint.getTextPath(batteryLevel.toString(), 0, batteryLevel.toString().length, cx, textY, textPath)
         }
 
-        // Draw Background (Track) with Text subtracted
+        // Background (track) with text subtracted
         val backgroundPath = Path()
         backgroundPath.addPath(scaledPerimeter)
         backgroundPath.addPath(scaledButton)
         backgroundPath.op(textPath, Path.Op.DIFFERENCE)
         c.drawPath(backgroundPath, dualToneBackgroundFill)
 
-        // Draw Fill with Text subtracted
+        // Fill with text subtracted
         val fillDrawPath = Path()
         fillDrawPath.set(scaledPerimeter)
         fillDrawPath.op(levelPath, Path.Op.INTERSECT)
         fillDrawPath.op(textPath, Path.Op.DIFFERENCE)
-        
+
         fillPaint.color = levelColor
         c.drawPath(fillDrawPath, fillPaint)
-        
+
         c.restore()
     }
 
@@ -230,21 +217,14 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
             thresh = colorLevels[i]
             color = colorLevels[i + 1]
             if (level <= thresh) {
-                return if (i == colorLevels.size - 2) {
-                    fillColor
-                } else {
-                    color
-                }
+                return if (i == colorLevels.size - 2) fillColor else color
             }
             i += 2
         }
         return color
     }
 
-    override fun setAlpha(alpha: Int) {
-        drawableAlpha = alpha
-        invalidateSelf()
-    }
+    override fun setAlpha(alpha: Int) { drawableAlpha = alpha; invalidateSelf() }
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
         fillPaint.colorFilter = colorFilter
@@ -261,12 +241,8 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         updateSize()
     }
 
-    fun setPadding(left: Int, top: Int, right: Int, bottom: Int) {
-        updateSize()
-    }
-
     fun setColors(fgColor: Int, bgColor: Int, singleToneColor: Int) {
-        fillColor = if (dualTone) fgColor else singleToneColor
+        fillColor = fgColor
         fillPaint.color = fillColor
         dualToneBackgroundFill.color = 0xFFB1B1B1.toInt()
         dualToneBackgroundFill.alpha = 255
@@ -276,49 +252,38 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
 
     private fun updateSize() {
         val b = bounds
-        if (b.isEmpty) {
-            scaleMatrix.setScale(1f, 1f)
-        } else {
-            val sx = b.right / baseWidth
-            val sy = b.bottom / baseHeight
-            scaleMatrix.setScale(sx, sy)
-        }
+        scaleMatrix.setScale(
+            if (b.isEmpty) 1f else b.right / baseWidth,
+            if (b.isEmpty) 1f else b.bottom / baseHeight
+        )
         perimeterPath.transform(scaleMatrix, scaledPerimeter)
         buttonPath.transform(scaleMatrix, scaledButton)
-        fillMask.transform(scaleMatrix, scaledFill)
-        scaledFill.computeBounds(fillRect, true)
+        scaledPerimeter.computeBounds(fillRect, true)
     }
 
     private fun loadPaths() {
-        gap = baseWidth * (0.5f / 26f) // Small spasi (gap)
         bodyWidth = baseWidth * (23.5f / 26f)
-        buttonWidth = baseWidth - bodyWidth - gap
-        buttonHeight = baseHeight * (6f / 13f)
-        
+        val gap = baseWidth * (0.5f / 26f)
+        val buttonWidth = baseWidth - bodyWidth - gap
+        val buttonHeight = baseHeight * (6f / 13f)
+
         perimeterPath.reset()
         perimeterPath.addRoundRect(RectF(0f, 0f, bodyWidth, baseHeight), baseRadius, baseRadius, Path.Direction.CW)
-        
+
         buttonPath.reset()
         val buttonTop = (baseHeight - buttonHeight) / 2f
         val buttonLeft = bodyWidth + gap
         val buttonRight = baseWidth
         val buttonBottom = buttonTop + buttonHeight
-        
-        val buttonRect = RectF(buttonLeft, buttonTop, buttonRight, buttonBottom)
-        
-        // Draw true half-circle (D-shape)
-        buttonPath.moveTo(buttonLeft, buttonTop)
-        // arcTo(oval, startAngle, sweepAngle, forceMoveTo)
-        // Oval should be centered at the right edge
+
+        // D-shape (half-circle) battery nub
         val oval = RectF(buttonLeft - buttonWidth, buttonTop, buttonRight, buttonBottom)
+        buttonPath.moveTo(buttonLeft, buttonTop)
         buttonPath.arcTo(oval, 270f, 180f, false)
         buttonPath.lineTo(buttonLeft, buttonBottom)
         buttonPath.close()
 
-        fillMask.reset()
-        fillMask.addPath(perimeterPath)
-        fillMask.computeBounds(fillRect, true)
-        dualTone = true
+        perimeterPath.computeBounds(fillRect, true)
     }
 
     companion object {
