@@ -517,6 +517,30 @@ public class VolumeDialogImpl implements VolumeDialog,
         row.appMuted = data.isMuted();
         row.slider.setProgress((int) (data.getVolume() * 100));
 
+        row.upButton = row.view.findViewById(R.id.volume_row_slider_up);
+        if (row.upButton != null) {
+            row.upButton.setOnClickListener(v -> {
+                rescheduleTimeoutH();
+                int progress = row.slider.getProgress();
+                int newProgress = Math.min(100, progress + 10);
+                row.slider.setProgress(newProgress);
+                mController.getAudioManager().setAppVolume(row.packageName, newProgress * 0.01f);
+            });
+            row.upButton.setVisibility(isLandscape() ? GONE : VISIBLE);
+        }
+
+        row.downButton = row.view.findViewById(R.id.volume_row_slider_down);
+        if (row.downButton != null) {
+            row.downButton.setOnClickListener(v -> {
+                rescheduleTimeoutH();
+                int progress = row.slider.getProgress();
+                int newProgress = Math.max(0, progress - 10);
+                row.slider.setProgress(newProgress);
+                mController.getAudioManager().setAppVolume(row.packageName, newProgress * 0.01f);
+            });
+            row.downButton.setVisibility(isLandscape() ? GONE : VISIBLE);
+        }
+
         row.dndIcon = row.view.findViewById(R.id.dnd_icon);
         row.dndIcon.setVisibility(View.GONE);
 
@@ -611,18 +635,22 @@ public class VolumeDialogImpl implements VolumeDialog,
         row.slider.setOnSeekBarChangeListener(new VolumeSeekBarChangeListener(row));
 
         row.upButton = row.view.findViewById(R.id.volume_row_slider_up);
-        row.upButton.setOnClickListener(v -> {
-            rescheduleTimeoutH();
-            mController.getAudioManager().adjustStreamVolume(row.stream, AudioManager.ADJUST_RAISE, 0);
-            row.userAttempt = 0;
-        });
+        if (row.upButton != null) {
+            row.upButton.setOnClickListener(v -> {
+                rescheduleTimeoutH();
+                mController.getAudioManager().adjustStreamVolume(row.stream, AudioManager.ADJUST_RAISE, 0);
+                row.userAttempt = 0;
+            });
+        }
 
         row.downButton = row.view.findViewById(R.id.volume_row_slider_down);
-        row.downButton.setOnClickListener(v -> {
-            rescheduleTimeoutH();
-            mController.getAudioManager().adjustStreamVolume(row.stream, AudioManager.ADJUST_LOWER, 0);
-            row.userAttempt = 0;
-        });
+        if (row.downButton != null) {
+            row.downButton.setOnClickListener(v -> {
+                rescheduleTimeoutH();
+                mController.getAudioManager().adjustStreamVolume(row.stream, AudioManager.ADJUST_LOWER, 0);
+                row.userAttempt = 0;
+            });
+        }
 
         row.anim = null;
 
