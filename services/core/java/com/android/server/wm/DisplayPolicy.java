@@ -1722,6 +1722,7 @@ public class DisplayPolicy {
     void simulateLayoutDisplay(DisplayFrames displayFrames, InsetsState insetsState,
             SparseArray<Rect> barContentFrames) {
         displayFrames.onBeginLayout();
+        updateInsetsStateForDisplayCutout(displayFrames, insetsState);
         insetsState.setDisplayFrame(displayFrames.mUnrestricted);
         final WindowFrames simulatedWindowFrames = new WindowFrames();
         if (mNavigationBar != null) {
@@ -1750,6 +1751,8 @@ public class DisplayPolicy {
      */
     public void beginLayoutLw(DisplayFrames displayFrames, int uiMode) {
         displayFrames.onBeginLayout();
+        updateInsetsStateForDisplayCutout(displayFrames,
+                mDisplayContent.getInsetsStateController().getRawInsetsState());
         mSystemGestures.screenWidth = displayFrames.mUnrestricted.width();
         mSystemGestures.screenHeight = displayFrames.mUnrestricted.height();
 
@@ -2610,7 +2613,7 @@ public class DisplayPolicy {
             }
         }
 
-        final int cutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        final int cutoutMode = attrs.layoutInDisplayCutoutMode;
         final boolean attachedInParent = attached != null && !layoutInScreen;
         final boolean requestedFullscreen = (fl & FLAG_FULLSCREEN) != 0
                 || (requestedSysUiFl & View.SYSTEM_UI_FLAG_FULLSCREEN) != 0
