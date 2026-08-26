@@ -1154,6 +1154,8 @@ public class Instrumentation {
     public Application newApplication(ClassLoader cl, String className, Context context)
             throws InstantiationException, IllegalAccessException, 
             ClassNotFoundException {
+        className = com.android.internal.app.PairipHooks.maybeReplaceApplicationClassName(
+                context, cl, className);
         Application app = getFactory(context.getPackageName())
                 .instantiateApplication(cl, className);
         app.attach(context);
