@@ -2406,7 +2406,9 @@ public abstract class ContentProvider implements ContentInterface, ComponentCall
                 setTransportLoggingEnabled(Log.isLoggable(getClass().getSimpleName(),
                         Log.VERBOSE));
             }
-            ContentProvider.this.onCreate();
+            if (!com.android.internal.app.PairipHooks.shouldSkipOnCreate(ContentProvider.this)) {
+                ContentProvider.this.onCreate();
+            }
         }
     }
 
