@@ -2240,4 +2240,43 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
     /** {@hide} */ public String[] getSplitResourcePaths() { return splitPublicSourceDirs; }
     @GwpAsanMode
     public int getGwpAsanMode() { return gwpAsanMode; }
+
+    private static volatile Boolean hasPlayStoreSourceStamp;
+
+    private static final byte[] PLAY_STORE_SOURCE_STAMP_CERT_DIGEST = parseHex(
+            "3257d599a49d2c961a471ca9843f59d341a405884583fc087df4237b733bbd6d");
+
+    /** @hide */
+    public boolean hasPlayStoreSourceStamp() {
+        Boolean cache = hasPlayStoreSourceStamp;
+        if (cache != null) {
+            return cache.booleanValue();
+        }
+
+        ArrayList<String> apkPaths = new ArrayList<String>();
+        apkPaths.add(Objects.requireNonNull(sourceDir));
+        String[] splits = splitSourceDirs;
+        if (splits != null) {
+            for (String splitPath : splits) {
+                apkPaths.add(Objects.requireNonNull(splitPath));
+            }
+        }
+        boolean result = android.util.apk.SourceStampVerifier
+                .verify(apkPaths, PLAY_STORE_SOURCE_STAMP_CERT_DIGEST)
+                .isVerified();
+        hasPlayStoreSourceStamp = Boolean.valueOf(result);
+        android.util.Log.d("PlayStoreSourceStampCheck",
+                "result for " + packageName + ": " + result);
+        return result;
+    }
+
+    private static byte[] parseHex(String hex) {
+        int len = hex.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i + 1), 16));
+        }
+        return data;
+    }
 }
