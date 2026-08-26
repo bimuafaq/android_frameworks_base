@@ -24,6 +24,7 @@ import static android.util.apk.ApkSigningBlockUtils.getSignatureAlgorithmJcaSign
 import static android.util.apk.ApkSigningBlockUtils.isSupportedSignatureAlgorithm;
 import static android.util.apk.ApkSigningBlockUtils.readLengthPrefixedByteArray;
 
+import android.annotation.Nullable;
 import android.util.Pair;
 import android.util.Slog;
 import android.util.jar.StrictJarFile;
@@ -89,9 +90,15 @@ public abstract class SourceStampVerifier {
 
     /** Verifies SourceStamp present in a list of APKs. */
     public static SourceStampVerificationResult verify(List<String> apkFiles) {
+        return verify(apkFiles, null);
+    }
+
+    public static SourceStampVerificationResult verify(List<String> apkFiles,
+                                                       @Nullable byte[] requiredSourceStampCertDigest) {
         Certificate stampCertificate = null;
         for (String apkFile : apkFiles) {
-            SourceStampVerificationResult sourceStampVerificationResult = verify(apkFile);
+            SourceStampVerificationResult sourceStampVerificationResult = verify(apkFile,
+                    requiredSourceStampCertDigest);
             if (!sourceStampVerificationResult.isPresent()
                     || !sourceStampVerificationResult.isVerified()) {
                 return sourceStampVerificationResult;
@@ -107,6 +114,11 @@ public abstract class SourceStampVerifier {
 
     /** Verifies SourceStamp present in the provided APK. */
     public static SourceStampVerificationResult verify(String apkFile) {
+        return verify(apkFile, null);
+    }
+
+    public static SourceStampVerificationResult verify(String apkFile,
+                                                       @Nullable byte[] requiredSourceStampCertDigest) {
         StrictJarFile apkJar = null;
         try (RandomAccessFile apk = new RandomAccessFile(apkFile, "r")) {
             apkJar =
@@ -119,6 +131,11 @@ public abstract class SourceStampVerifier {
                 // SourceStamp certificate hash file not found, which means that there is not
                 // SourceStamp present.
                 return SourceStampVerificationResult.notPresent();
+            }
+            if (requiredSourceStampCertDigest != null) {
+                if (!Arrays.equals(sourceStampCertificateDigest, requiredSourceStampCertDigest)) {
+                    return SourceStampVerificationResult.notVerified();
+                }
             }
             byte[] manifestBytes = getManifestBytes(apkJar);
             return verify(apk, sourceStampCertificateDigest, manifestBytes);
