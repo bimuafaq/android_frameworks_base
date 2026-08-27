@@ -41,8 +41,17 @@ public class PairipHooks {
         if (!shouldBypass(context)) {
             return className;
         }
-        Class cls = classLoader.loadClass(className);
-        String res = requireNonNull(cls.getSuperclass()).getName();
+        String res;
+        try {
+            Class cls = classLoader.loadClass(className);
+            res = requireNonNull(cls.getSuperclass()).getName();
+        } catch (ClassNotFoundException | NullPointerException e) {
+            // The pairip Application class could not be resolved (e.g. stripped or
+            // obfuscated while the manifest still references it). Fall back to the
+            // original class name instead of crashing application startup.
+            Log.w(TAG, "failed to resolve pairip Application superclass for " + className, e);
+            return className;
+        }
         Log.d(TAG, "replaced pairip Application class with its parent " + res);
         return res;
     }
