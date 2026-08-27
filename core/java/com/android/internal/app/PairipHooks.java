@@ -4,7 +4,6 @@ import android.app.AppGlobals;
 import android.content.ContentProvider;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.RemoteException;
 import android.provider.Settings;
 import android.util.Log;
@@ -86,7 +85,7 @@ public class PairipHooks {
             }
         }
 
-        if (res && Build.IS_DEBUGGABLE) {
+        if (res) {
             if (Settings.Global.getInt(context.getContentResolver(), "skip_pairip_bypass", 0) == 1) {
                 Log.d(TAG, "skip_pairip_bypass is set, keeping pairip check", new Throwable());
                 shouldBypassCached = Boolean.FALSE;
