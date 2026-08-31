@@ -39,32 +39,6 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="4dp">
 
-        <com.android.keyguard.CarrierText
-            android:id="@+id/qs_carrier_text"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_gravity="start|center_vertical"
-            android:gravity="center_vertical"
-            android:ellipsize="marquee"
-            android:singleLine="true"
-            android:textAppearance="@style/TextAppearance.QS.TileLabel"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textDirection="locale"
-            android:textSize="12sp" />
-
-        <com.android.systemui.statusbar.DataUsageView
-            android:id="@+id/data_usage_view"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_gravity="start|center_vertical"
-            android:gravity="center_vertical"
-            android:ellipsize="marquee"
-            android:singleLine="true"
-            android:textAppearance="@style/TextAppearance.QS.TileLabel"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textDirection="locale"
-            android:textSize="12sp" />
-
         <com.android.keyguard.AlphaOptimizedLinearLayout
             android:id="@+id/op_qs_footer_actions_container"
             android:layout_width="wrap_content"
@@ -82,20 +56,6 @@
                 android:focusable="true"
                 android:padding="@dimen/qs_footer_icon_padding"
                 android:src="@*android:drawable/ic_mode_edit"
-                android:tint="?android:attr/colorForeground"
-                android:visibility="gone" />
-
-            <com.android.keyguard.AlphaOptimizedImageButton
-                android:id="@+id/running_services_button"
-                android:layout_width="@dimen/op_qs_footer_action_button_size"
-                android:layout_height="@dimen/op_qs_footer_action_button_size"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:clipToPadding="false"
-                android:contentDescription="@string/accessibility_quick_settings_running_services"
-                android:focusable="true"
-                android:padding="@dimen/qs_footer_icon_padding"
-                android:src="@drawable/ic_settings_memory"
                 android:tint="?android:attr/colorForeground"
                 android:visibility="gone" />
 

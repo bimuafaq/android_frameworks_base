@@ -262,20 +262,6 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
                 Dependency.get(ActivityStarter.class).postQSRunnableDismissingKeyguard(() ->
                         showEdit(view)));
         }
-        if (mOPFooterView.getServicesButton() != null) {
-            mOPFooterView.getServicesButton().setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                   startRunningServicesActivity();
-                }
-            });
-        }
-        if (mOPFooterView.getDataUsageView() != null) {
-            mOPFooterView.getDataUsageView().setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                   startDataUsageActivity();
-                }
-            });
-        }
     }
 
     protected QSTileLayout createRegularTileLayout() {
@@ -823,14 +809,6 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
             int visibility = (mExpanded && mOPFooterView.isEditEnabled()) ? View.VISIBLE : View.GONE;
             mOPFooterView.getEditButton().setVisibility(visibility);
         }
-        if (mOPFooterView.getServicesButton() != null) {
-            int visibility = (mExpanded && mOPFooterView.isServicesEnabled()) ? View.VISIBLE : View.GONE;
-            mOPFooterView.getServicesButton().setVisibility(visibility);
-        }
-        if (mOPFooterView.getDataUsageView() != null) {
-            int visibility = (mExpanded && mOPFooterView.isDataUsageEnabled()) ? View.VISIBLE : View.GONE;
-            mOPFooterView.getDataUsageView().setVisibility(visibility);
-        }
         if (mIsLandscape && mUsingMediaPlayer) {
             LinearLayout.LayoutParams layoutParams = (LayoutParams) mMediaHost.getHostView().getLayoutParams();
             layoutParams.topMargin = mExpanded ? mMediaTotalTopMargin : 0;
@@ -1017,22 +995,8 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
         return r;
     }
 
-    private void startRunningServicesActivity() {
-        Intent intent = new Intent();
-        intent.setClassName("com.android.settings",
-                "com.android.settings.Settings$DevRunningServicesActivity");
-        Dependency.get(ActivityStarter.class).startActivity(intent, true /* dismissShade */);
-    }
-
     private void startSettingsActivity() {
         Intent intent = new Intent(android.provider.Settings.ACTION_SETTINGS);
-        Dependency.get(ActivityStarter.class).startActivity(intent, true /* dismissShade */);
-    }
-
-    private void startDataUsageActivity() {
-        Intent intent = new Intent();
-        intent.setClassName("com.android.settings",
-                "com.android.settings.Settings$DataUsageSummaryActivity");
         Dependency.get(ActivityStarter.class).startActivity(intent, true /* dismissShade */);
     }
 
