@@ -87,6 +87,8 @@ import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.util.RingerModeTracker;
 import com.android.systemui.tuner.TunerService;
 
+import lineageos.providers.LineageSettings;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
