@@ -498,8 +498,8 @@
     <dimen name="qs_tile_margin_horizontal">18dp</dimen>
     <dimen name="qs_tile_margin_horizontal_two_line">2dp</dimen>
     <dimen name="qs_tile_margin_vertical">2dp</dimen>
-    <dimen name="qs_tile_margin_top_bottom">12dp</dimen>
-    <dimen name="qs_tile_margin_top_bottom_negative">-12dp</dimen>
+    <dimen name="qs_tile_margin_top_bottom">4dp</dimen>
+    <dimen name="qs_tile_margin_top_bottom_negative">-4dp</dimen>
     <!-- The height of the qs customize header. Should be
          (qs_panel_padding_top (48dp) +  brightness_mirror_height (48dp) + qs_tile_margin_top (0dp)) -
          (Toolbar_minWidth (56dp) + qs_tile_margin_top_bottom (12dp))
@@ -585,8 +585,8 @@
     <!-- Padding between subtitles and the following text in the QSFooter dialog -->
     <dimen name="qs_footer_dialog_subtitle_padding">20dp</dimen>
 
-    <dimen name="seek_bar_height">3dp</dimen>
-    <dimen name="seek_bar_corner_radius">3dp</dimen>
+    <dimen name="seek_bar_height">4dp</dimen>
+    <dimen name="seek_bar_corner_radius">4dp</dimen>
 
     <!-- Zen mode panel: condition item button padding -->
     <dimen name="zen_mode_condition_detail_button_padding">8dp</dimen>

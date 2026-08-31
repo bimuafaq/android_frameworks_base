@@ -85,6 +85,12 @@ public class QuickQSPanel extends QSPanel {
     }
 
     @Override
+    protected void addViewsBelowTiles() {
+        super.addViewsBelowTiles();
+        mOPFooterView.setIsQQSPanel(true);
+    }
+
+    @Override
     protected void addSecurityFooter() {
         // No footer needed
     }
@@ -137,6 +143,26 @@ public class QuickQSPanel extends QSPanel {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         Dependency.get(TunerService.class).removeTunable(mNumTiles);
+    }
+
+    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        updateDraghandleBottomMargin();
+    }
+
+    @Override
+    void setDragHandle(View v) {
+        super.setDragHandle(v);
+        updateDraghandleBottomMargin();
+    }
+
+    private void updateDraghandleBottomMargin() {
+        if (mDragHandle != null) {
+            LayoutParams lp = (LayoutParams) mOPFooterView.getLayoutParams();
+            lp.bottomMargin = mIsLandscape ? mDragHandle.getHeight() : 0;
+            mOPFooterView.setLayoutParams(lp);
+        }
     }
 
     @Override
