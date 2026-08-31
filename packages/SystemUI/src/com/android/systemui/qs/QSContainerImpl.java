@@ -95,6 +95,8 @@ public class QSContainerImpl extends FrameLayout {
                 mAnimateBottomOnNextLayout = true;
             }
         });
+        mQSPanel.setOtherPanel(mHeader.getHeaderQsPanel());
+        mHeader.getHeaderQsPanel().setOtherPanel(mQSPanel);
 
 
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);

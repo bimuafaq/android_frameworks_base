@@ -25,6 +25,7 @@
     <string name="accessibility_quick_settings_ambient_display_on">Ambient display on.</string>
     <string name="accessibility_quick_settings_ambient_display_changed_off">Ambient display turned off.</string>
     <string name="accessibility_quick_settings_ambient_display_changed_on">Ambient display turned on.</string>
+    <string name="accessibility_quick_settings_running_services">Open Running Services screen.</string>
 
     <!-- AOD QS tile -->
     <string name="quick_settings_aod_label">AOD</string>
@@ -145,4 +146,10 @@
     <string name="force_stop_dlg_title">Force stop?</string>
     <string name="force_stop_dlg_text">If you force stop an app, it may misbehave.</string>
     <string name="guts_force_close_app">Force stop</string>
+
+    <!-- Data usage info -->
+    <string name="usage_data">used</string>
+    <string name="usage_data_today">used today</string>
+    <string name="usage_wifi_prefix">Wi-Fi</string>
+    <string name="usage_data_prefix">Data</string>
 </resources>

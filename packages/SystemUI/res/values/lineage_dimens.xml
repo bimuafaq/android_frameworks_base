@@ -33,4 +33,10 @@
 
     <!-- Largest size an avatar might need to be drawn in the power menu user picker -->
     <dimen name="global_actions_avatar_size">24dp</dimen>
+
+    <!-- OxygenOS 11 QS layout -->
+    <dimen name="quick_settings_top_margin_media">8dp</dimen>
+    <dimen name="quick_settings_top_margin_media_extra">33dp</dimen>
+    <dimen name="brightness_slider_height">48dp</dimen>
+    <dimen name="op_qs_footer_action_button_size">48dp</dimen>
 </resources>
