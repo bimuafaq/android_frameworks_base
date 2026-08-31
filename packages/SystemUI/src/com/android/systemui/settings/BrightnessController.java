@@ -299,15 +299,13 @@ public class BrightnessController implements ToggleSlider.Listener {
                     break;
                 case MSG_VR_MODE_CHANGED:
                     updateVrMode(msg.arg1 != 0);
+                    break;
                 case MSG_BRIGHTNESS_RESTRICTION:
                     ((ToggleSliderView)mControl).setEnforcedAdmin(
                             (RestrictedLockUtils.EnforcedAdmin) msg.obj);
                     break;
                 default:
                     super.handleMessage(msg);
-                }
-            } finally {
-                mExternalChange = false;
             }
         }
     };
