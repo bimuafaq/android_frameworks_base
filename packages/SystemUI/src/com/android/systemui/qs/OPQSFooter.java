@@ -16,91 +16,40 @@
 
 package com.android.systemui.qs;
 
-import static android.app.StatusBarManager.DISABLE2_QUICK_SETTINGS;
-
-import static com.android.systemui.util.InjectionInflationController.VIEW_CONTEXT;
-
 import android.content.Context;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.database.ContentObserver;
-import android.graphics.PorterDuff.Mode;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.UserHandle;
-import android.os.UserManager;
-import android.provider.Settings;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 
-import com.android.internal.logging.MetricsLogger;
-import com.android.internal.logging.nano.MetricsProto;
-import com.android.keyguard.KeyguardUpdateMonitor;
-import com.android.settingslib.Utils;
-import com.android.settingslib.development.DevelopmentSettingsEnabler;
-import com.android.settingslib.drawable.UserIconDrawable;
-import com.android.systemui.Dependency;
 import com.android.systemui.R;
-import com.android.systemui.R.dimen;
 import com.android.systemui.qs.TouchAnimator.Builder;
-import com.android.systemui.statusbar.phone.MultiUserSwitch;
 import com.android.systemui.statusbar.phone.SettingsButton;
-import com.android.systemui.statusbar.policy.DeviceProvisionedController;
-import com.android.systemui.statusbar.policy.UserInfoController;
-import com.android.systemui.statusbar.policy.UserInfoController.OnUserInfoChangedListener;
-import com.android.systemui.tuner.TunerService;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import android.util.Log;
 
 public class OPQSFooter extends LinearLayout {
 
-    private Context mContext;
     private View mSettingsContainer;
     private SettingsButton mSettingsButton;
-    protected View mEdit;
-    protected TouchAnimator mFooterAnimator;
-    private Boolean mExpanded;
+    private View mEdit;
+    private TouchAnimator mFooterAnimator;
     private FrameLayout mFooterActions;
-    private boolean mIsLandscape = false;
-    private boolean mIsQQSPanel = false;
+    private boolean mExpanded;
+    private boolean mIsQQSPanel;
 
     public OPQSFooter(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        mContext = context;
     }
 
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-
         mEdit = findViewById(R.id.edit);
         mSettingsButton = findViewById(R.id.settings_button);
         mSettingsContainer = findViewById(R.id.settings_button_container);
         mFooterActions = findViewById(R.id.op_qs_footer_actions);
-        mIsLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
         mFooterAnimator = createFooterAnimator();
-    }
-
-    @Override
-    protected void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        setOrientation(newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE);
     }
 
     public void setExpansion(float headerExpansionFraction) {
@@ -111,34 +60,12 @@ public class OPQSFooter extends LinearLayout {
 
     public void setIsQQSPanel(boolean isQQS) {
         mIsQQSPanel = isQQS;
-        setOrientation(mIsLandscape);
+        updateFooterActionsVisibility();
     }
 
     public void setExpanded(boolean expanded) {
         mExpanded = expanded;
-        if (mSettingsButton != null) {
-            int visibility = isSettingsEnabled() ? View.VISIBLE : View.GONE;
-            mSettingsButton.setVisibility(visibility);
-        }
-        if (mSettingsContainer != null) {
-            int visibility = isSettingsEnabled() ? View.VISIBLE : View.GONE;
-            mSettingsContainer.setVisibility(visibility);
-        }
-        if (mEdit != null) {
-            int visibility = (mExpanded && isEditEnabled()) ? View.VISIBLE : View.GONE;
-            mEdit.setVisibility(visibility);
-        }
-    }
-
-    @Nullable
-    private TouchAnimator createFooterAnimator() {
-        TouchAnimator.Builder builder = new TouchAnimator.Builder()
-                .addFloat(mEdit, "alpha", 0, 0, 1);
-        if (mIsLandscape) {
-            builder = builder.addFloat(mSettingsButton, "alpha", 0, 0, 1)
-                    .setStartDelay(0.5f);
-        }
-        return builder.build();
+        mEdit.setVisibility(expanded ? View.VISIBLE : View.GONE);
     }
 
     public View getSettingsContainer() {
@@ -153,27 +80,20 @@ public class OPQSFooter extends LinearLayout {
         return mEdit;
     }
 
-    public boolean isSettingsEnabled() {
-        return Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.QS_FOOTER_SHOW_SETTINGS, 1) == 1;
-    }
-
-    public boolean isEditEnabled() {
-        return Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.QS_FOOTER_SHOW_EDIT, 1) == 1;
-    }
-
     public View getFooterActions() {
         return mFooterActions;
     }
 
-    private void setOrientation(boolean isLandscape) {
-        if (mIsLandscape != isLandscape) {
-            mIsLandscape = isLandscape;
-            mSettingsButton.setAlpha(1.0f);
-            mFooterAnimator = createFooterAnimator();
-        }
-        mFooterActions.setVisibility(mIsLandscape && mIsQQSPanel ? View.GONE : View.VISIBLE);
+    @Nullable
+    private TouchAnimator createFooterAnimator() {
+        return new Builder()
+                .addFloat(mEdit, "alpha", 0, 0, 1)
+                .addFloat(mSettingsButton, "alpha", 0, 0, 1)
+                .setStartDelay(0.5f)
+                .build();
     }
 
+    private void updateFooterActionsVisibility() {
+        mFooterActions.setVisibility(mIsQQSPanel ? View.GONE : View.VISIBLE);
+    }
 }

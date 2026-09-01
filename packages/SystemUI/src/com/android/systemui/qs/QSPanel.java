@@ -126,7 +126,6 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
     @Nullable
     protected View mFooter;
 
-    protected View mDragHandle;
     private View mOtherPanel;
 
     @Nullable
@@ -564,10 +563,6 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
         switchTileLayout(true /* force */);
     }
 
-    void setDragHandle(View v) {
-        mDragHandle = v;
-    }
-
     void setOtherPanel(View qs) {
         mOtherPanel = qs;
     }
@@ -718,8 +713,7 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
     int getFooterHeight() {
         View footerActions = mOPFooterView.getFooterActions();
         MarginLayoutParams lp = (MarginLayoutParams) footerActions.getLayoutParams();
-        return lp.topMargin + lp.bottomMargin + footerActions.getMeasuredHeight()
-                - ((mIsLandscape && mDragHandle != null) ? mDragHandle.getHeight() : 0);
+        return lp.topMargin + lp.bottomMargin + footerActions.getMeasuredHeight();
     }
 
     boolean isMediaHostVisible() {
@@ -796,18 +790,6 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
         } else {
             mUiEventLogger.log(openPanelEvent());
             logTiles();
-        }
-        if (mOPFooterView.getSettingsButton() != null) {
-            int visibility = mOPFooterView.isSettingsEnabled() ? View.VISIBLE : View.GONE;
-            mOPFooterView.getSettingsButton().setVisibility(visibility);
-        }
-        if (mOPFooterView.getSettingsContainer() != null) {
-            int visibility = mOPFooterView.isSettingsEnabled() ? View.VISIBLE : View.GONE;
-            mOPFooterView.getSettingsContainer().setVisibility(visibility);
-        }
-        if (mOPFooterView.getEditButton() != null) {
-            int visibility = (mExpanded && mOPFooterView.isEditEnabled()) ? View.VISIBLE : View.GONE;
-            mOPFooterView.getEditButton().setVisibility(visibility);
         }
         if (mIsLandscape && mUsingMediaPlayer) {
             LinearLayout.LayoutParams layoutParams = (LayoutParams) mMediaHost.getHostView().getLayoutParams();

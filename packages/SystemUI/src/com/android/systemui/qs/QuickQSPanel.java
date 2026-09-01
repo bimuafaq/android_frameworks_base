@@ -146,26 +146,6 @@ public class QuickQSPanel extends QSPanel {
     }
 
     @Override
-    protected void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        updateDraghandleBottomMargin();
-    }
-
-    @Override
-    void setDragHandle(View v) {
-        super.setDragHandle(v);
-        updateDraghandleBottomMargin();
-    }
-
-    private void updateDraghandleBottomMargin() {
-        if (mDragHandle != null) {
-            LayoutParams lp = (LayoutParams) mOPFooterView.getLayoutParams();
-            lp.bottomMargin = mIsLandscape ? mDragHandle.getHeight() : 0;
-            mOPFooterView.setLayoutParams(lp);
-        }
-    }
-
-    @Override
     protected String getDumpableTag() {
         return TAG;
     }

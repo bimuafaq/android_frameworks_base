@@ -4829,20 +4829,6 @@ public final class Settings {
         public static final String SMART_CHARGING_RESUME_LEVEL = "smart_charging_resume_level";
 
         /**
-         * Show Settings button in QS Footer.
-         *
-         * @hide
-         */
-        public static final String QS_FOOTER_SHOW_SETTINGS = "qs_footer_show_settings";
-
-        /**
-         * Show Edit button in QS Footer.
-         *
-         * @hide
-         */
-        public static final String QS_FOOTER_SHOW_EDIT = "qs_footer_show_edit";
-
-        /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
          *
