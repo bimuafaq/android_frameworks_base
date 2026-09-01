@@ -35,7 +35,6 @@ public class OPQSFooter extends LinearLayout {
     private View mEdit;
     private TouchAnimator mFooterAnimator;
     private FrameLayout mFooterActions;
-    private boolean mExpanded;
     private boolean mIsQQSPanel;
 
     public OPQSFooter(Context context, @Nullable AttributeSet attrs) {
@@ -49,6 +48,7 @@ public class OPQSFooter extends LinearLayout {
         mSettingsButton = findViewById(R.id.settings_button);
         mSettingsContainer = findViewById(R.id.settings_button_container);
         mFooterActions = findViewById(R.id.op_qs_footer_actions);
+        mEdit.setVisibility(View.VISIBLE);
         mFooterAnimator = createFooterAnimator();
     }
 
@@ -61,11 +61,6 @@ public class OPQSFooter extends LinearLayout {
     public void setIsQQSPanel(boolean isQQS) {
         mIsQQSPanel = isQQS;
         updateFooterActionsVisibility();
-    }
-
-    public void setExpanded(boolean expanded) {
-        mExpanded = expanded;
-        mEdit.setVisibility(expanded ? View.VISIBLE : View.GONE);
     }
 
     public View getSettingsContainer() {

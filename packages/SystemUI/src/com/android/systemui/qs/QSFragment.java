@@ -346,7 +346,6 @@ public class QSFragment extends LifecycleFragment implements QS, CommandQueue.Ca
     public void setExpanded(boolean expanded) {
         if (DEBUG) Log.d(TAG, "setExpanded " + expanded);
         mQsExpanded = expanded;
-        mOPFooter.setExpanded(mQsExpanded);
         mQSPanel.setListening(mListening, mQsExpanded);
         updateQsState();
     }
