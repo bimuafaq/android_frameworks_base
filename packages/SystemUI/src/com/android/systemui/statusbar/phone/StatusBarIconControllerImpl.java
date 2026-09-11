@@ -35,6 +35,10 @@ import com.android.systemui.statusbar.phone.StatusBarSignalPolicy.MobileIconStat
 import com.android.systemui.statusbar.phone.StatusBarSignalPolicy.WifiIconState;
 import com.android.systemui.statusbar.policy.ConfigurationController;
 import com.android.systemui.statusbar.policy.ConfigurationController.ConfigurationListener;
+import com.android.systemui.statusbar.stacked.DualSim;
+import com.android.systemui.statusbar.stacked.StackedCellular;
+import com.android.systemui.statusbar.stacked.StackedHelper;
+import com.android.systemui.statusbar.stacked.StackedIconStore;
 import com.android.systemui.tuner.TunerService;
 import com.android.systemui.tuner.TunerService.Tunable;
 
@@ -196,6 +200,102 @@ public class StatusBarIconControllerImpl extends StatusBarIconList implements Tu
      */
     @Override
     public void setMobileIcons(String slot, List<MobileIconState> iconStates) {
+        // --- Stacked dual-SIM path (additive, like 23.2) ---
+        // Mirrors MobileIconsInteractor.kt:310 + DualSim.kt:98 + MobileUiAdapter.kt:57
+        // When exactly two states with same numberOfLevels, collapse per-SIM icons
+        // and show a single stacked icon in status_bar_stacked_mobile.
+        // Hide via "settings put secure icon_blacklist stacked_mobile" if needed (23.2 behaviour).
+        if (iconStates != null && iconStates.size() == 2) {
+            // Build StackedCellular from the packed strengthId (SignalDrawable.getState packing)
+            StackedCellular a = StackedHelper.fromStrengthId(iconStates.get(0).strengthId);
+            StackedCellular b = StackedHelper.fromStrengthId(iconStates.get(1).strengthId);
+            if (StackedHelper.isStackable(a, b)) {
+                // Order primary = active data subId (StackedMobileIconViewModel.kt:68)
+                int activeSubId = StackedHelper.getActiveDataSubId(mContext);
+                MobileIconState primaryState;
+                MobileIconState secondaryState;
+                StackedCellular primaryCell;
+                StackedCellular secondaryCell;
+                int primarySub;
+                int secondarySub;
+                if (iconStates.get(0).subId == activeSubId) {
+                    primaryState = iconStates.get(0);
+                    secondaryState = iconStates.get(1);
+                    primaryCell = a;
+                    secondaryCell = b;
+                    primarySub = primaryState.subId;
+                    secondarySub = secondaryState.subId;
+                } else if (iconStates.get(1).subId == activeSubId) {
+                    primaryState = iconStates.get(1);
+                    secondaryState = iconStates.get(0);
+                    primaryCell = b;
+                    secondaryCell = a;
+                    primarySub = primaryState.subId;
+                    secondarySub = secondaryState.subId;
+                } else {
+                    // No active match — keep original order as primary=0
+                    primaryState = iconStates.get(0);
+                    secondaryState = iconStates.get(1);
+                    primaryCell = a;
+                    secondaryCell = b;
+                    primarySub = primaryState.subId;
+                    secondarySub = secondaryState.subId;
+                }
+                DualSim dual = new DualSim(primarySub, primaryCell, secondarySub, secondaryCell);
+                // Remove any existing per-SIM mobile icons and show stacked instead
+                removeAllIconsForSlot(slot);
+                // Stacked slot holds a single TYPE_STACKED-like holder (reuse mobile slot with TAG_PRIMARY + tag)
+                // We store the dual as two MobileIconStates but render via stacked drawable — for 18.1
+                // we keep it simple: store a single holder for the stacked slot with primary's state
+                // plus secondary piggy-backed via the stacked drawable's DualSim.
+                String stackedSlot = mContext.getString(
+                        com.android.internal.R.string.status_bar_stacked_mobile);
+                Slot stacked = getSlot(stackedSlot);
+                int stackedIndex = getSlotIndex(stackedSlot);
+                // Use subId as tag so re-entry replaces the same holder
+                int stackedTag = primarySub; // primary as tag
+                StatusBarIconHolder stackedHolder = stacked.getHolderForTag(stackedTag);
+                if (stackedHolder == null) {
+                    // Create a mobile-type holder tagged with primarySub so IconManager routes via TYPE_MOBILE
+                    // but we will render via StackedMobileView (holder carries both states via dual)
+                    stackedHolder = StatusBarIconHolder.fromMobileIconState(primaryState);
+                    // Attach secondary info via extra field — simplest: stash dual in a static map
+                    StackedIconStore.put(stackedSlot, stackedTag, dual, primaryState, secondaryState);
+                    setIcon(stackedIndex, stackedHolder);
+                } else {
+                    stackedHolder.setMobileState(primaryState);
+                    StackedIconStore.put(stackedSlot, stackedTag, dual, primaryState, secondaryState);
+                    handleSet(stackedIndex, stackedHolder);
+                }
+                // Ensure no leftover stacked holders with other tags
+                // (when active SIM changes, old primary tag may be stale)
+                for (StatusBarIconHolder h : new ArrayList<>(stacked.getHolderList())) {
+                    if (h.getTag() != stackedTag) {
+                        removeIcon(stackedIndex, h.getTag());
+                    }
+                }
+                return;
+            }
+            // Not stackable → fall through to normal path (and clear any stale stacked icons)
+            String stackedSlot = mContext.getString(
+                    com.android.internal.R.string.status_bar_stacked_mobile);
+            removeAllIconsForSlot(stackedSlot);
+            StackedIconStore.clear(stackedSlot);
+        } else {
+            // Not in stacked mode — ensure stacked slot is empty
+            try {
+                String stackedSlot = mContext.getString(
+                        com.android.internal.R.string.status_bar_stacked_mobile);
+                Slot stacked = getSlot(stackedSlot);
+                if (stacked.hasIconsInSlot()) {
+                    removeAllIconsForSlot(stackedSlot);
+                    StackedIconStore.clear(stackedSlot);
+                }
+            } catch (Exception ignored) {
+                // string resource may not exist on some builds before config merge
+            }
+        }
+
         Slot mobileSlot = getSlot(slot);
         int slotIndex = getSlotIndex(slot);
 

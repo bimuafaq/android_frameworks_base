@@ -16,6 +16,19 @@
      limitations under the License.
 -->
 <resources>
+    <!-- Stacked dual-SIM bars (port of StackedMobileIconDimensions:277, lineage-23.2) -->
+    <dimen name="stacked_icon_height">12dp</dimen>
+    <dimen name="stacked_secondary_bar_height">3dp</dimen>
+    <dimen name="stacked_bars_vertical_padding">1.5dp</dimen>
+    <dimen name="stacked_bar_base_height_four">4.5dp</dimen>
+    <dimen name="stacked_bar_base_height_five">3.5dp</dimen>
+    <dimen name="stacked_horizontal_padding_four">2dp</dimen>
+    <dimen name="stacked_horizontal_padding_five">1.5dp</dimen>
+    <dimen name="stacked_bars_level_increment">1dp</dimen>
+    <dimen name="stacked_exclamation_cutout_radius">5dp</dimen>
+    <dimen name="stacked_exclamation_diameter">1.5dp</dimen>
+    <dimen name="stacked_exclamation_height">4.5dp</dimen>
+
     <!-- Width of the battery icon in the status bar when set to circle style. -->
     <dimen name="status_bar_battery_icon_circle_width">14.5dp</dimen>
 

@@ -58,11 +58,13 @@
         <item><xliff:g id="id">@string/status_bar_wifi</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_hotspot</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_mobile</xliff:g></item>
+        <item><xliff:g id="id">@string/status_bar_stacked_mobile</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_airplane</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_battery</xliff:g></item>
     </string-array>
 
     <string translatable="false" name="status_bar_rotate">rotate</string>
+    <string translatable="false" name="status_bar_stacked_mobile">stacked_mobile</string>
     <string translatable="false" name="status_bar_headset">headset</string>
     <string translatable="false" name="status_bar_data_saver">data_saver</string>
     <string translatable="false" name="status_bar_managed_profile">managed_profile</string>

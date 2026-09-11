@@ -259,6 +259,21 @@ public interface StatusBarIconController {
                     return addSignalIcon(index, slot, holder.getWifiState());
 
                 case TYPE_MOBILE:
+                    // Additive stacked path — keep original mobile path untouched when not stacked
+                    if (isStackedSlot(slot)) {
+                        com.android.systemui.statusbar.stacked.StackedIconStore.Entry entry =
+                                com.android.systemui.statusbar.stacked.StackedIconStore.get(
+                                        slot, holder.getMobileState().subId);
+                        com.android.systemui.statusbar.stacked.StackedMobileView view =
+                                onCreateStackedMobileView(slot);
+                        if (entry != null) {
+                            view.applyStackedState(entry.dual, entry.primary, entry.secondary);
+                        } else {
+                            view.applyStackedState(null, holder.getMobileState(), holder.getMobileState());
+                        }
+                        mGroup.addView(view, index, onCreateLayoutParams());
+                        return view;
+                    }
                     return addMobileIcon(index, slot, holder.getMobileState());
             }
 
@@ -296,6 +311,21 @@ public interface StatusBarIconController {
                 mDemoStatusIcons.addMobileView(state);
             }
             return view;
+        }
+
+        private boolean isStackedSlot(String slot) {
+            try {
+                String stacked = mContext.getString(
+                        com.android.internal.R.string.status_bar_stacked_mobile);
+                return stacked.equals(slot);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        private com.android.systemui.statusbar.stacked.StackedMobileView onCreateStackedMobileView(
+                String slot) {
+            return com.android.systemui.statusbar.stacked.StackedMobileView.fromContext(mContext, slot);
         }
 
         private StatusBarIconView onCreateStatusBarIconView(String slot, boolean blocked) {
@@ -385,7 +415,23 @@ public interface StatusBarIconController {
         }
 
         public void onSetMobileIcon(int viewIndex, MobileIconState state) {
-            StatusBarMobileView view = (StatusBarMobileView) mGroup.getChildAt(viewIndex);
+            View child = mGroup.getChildAt(viewIndex);
+            if (child instanceof com.android.systemui.statusbar.stacked.StackedMobileView) {
+                com.android.systemui.statusbar.stacked.StackedMobileView stacked =
+                        (com.android.systemui.statusbar.stacked.StackedMobileView) child;
+                // Resolve slot name for this viewIndex
+                // StatusBarIconList stores holders; we recover slot via child slot
+                String slot = stacked.getSlot();
+                com.android.systemui.statusbar.stacked.StackedIconStore.Entry entry =
+                        com.android.systemui.statusbar.stacked.StackedIconStore.get(slot, state.subId);
+                if (entry != null) {
+                    stacked.applyStackedState(entry.dual, entry.primary, entry.secondary);
+                } else {
+                    stacked.applyStackedState(null, state, state);
+                }
+                return;
+            }
+            StatusBarMobileView view = (StatusBarMobileView) child;
             if (view != null) {
                 view.applyMobileState(state);
             }
