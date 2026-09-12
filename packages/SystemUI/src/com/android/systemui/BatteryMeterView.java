@@ -555,6 +555,8 @@ public class BatteryMeterView extends LinearLayout implements
     }
 
     private void updateBatteryStyle() {
+        mBatteryIconView.setScaleType(mBatteryStyle == BATTERY_STYLE_IOS
+                ? ImageView.ScaleType.FIT_START : ImageView.ScaleType.FIT_CENTER);
         switch (mBatteryStyle) {
             case BATTERY_STYLE_PORTRAIT:
                 mBatteryIconView.setImageDrawable(mThemedDrawable);
