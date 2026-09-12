@@ -20,9 +20,6 @@ package com.android.settingslib.graph
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
-import android.util.TypedValue
-import com.android.settingslib.R
-import com.android.settingslib.Utils
 import kotlin.math.floor
 
 class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
@@ -42,9 +39,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     private var baseTextSize: Float = 0f
     private var baseRadius: Float = 0f
 
-    private var colorLevels: IntArray
     private var fillColor: Int = Color.WHITE
-    private var levelColor: Int = Color.WHITE
     private var batteryLevel = 0
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
@@ -102,45 +97,25 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         } else {
             baseRadius = baseHeight / 2.0f
         }
-
-        val levels = res.obtainTypedArray(R.array.batterymeter_color_levels)
-        val colors = res.obtainTypedArray(R.array.batterymeter_color_values)
-        val N = levels.length()
-        colorLevels = IntArray(2 * N)
-        for (i in 0 until N) {
-            colorLevels[2 * i] = levels.getInt(i, 0)
-            if (colors.getType(i) == TypedValue.TYPE_ATTRIBUTE) {
-                colorLevels[2 * i + 1] = Utils.getColorAttrDefaultColor(context,
-                        colors.getThemeAttributeId(i, 0))
-            } else {
-                colorLevels[2 * i + 1] = colors.getColor(i, 0)
-            }
-        }
-        levels.recycle()
-        colors.recycle()
     }
 
     fun setCharging(active: Boolean) {
         charging = active
-        levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
     }
 
     fun setPowerSaveEnabled(enabled: Boolean) {
         powerSaveEnabled = enabled
-        levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
     }
 
     fun setShowPercent(show: Boolean) {
         mShowPercent = show
-        levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
     }
 
     fun setBatteryLevel(level: Int) {
         batteryLevel = level
-        levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
     }
 
@@ -167,7 +142,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
 
         levelRect.right = floor(fillTop)
         levelPath.addRect(levelRect, Path.Direction.CCW)
-        fillPaint.color = levelColor
+        fillPaint.color = fillColor
 
         val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
         textPaint.textSize = baseTextSize * scaleFactor
@@ -207,31 +182,6 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         c.restore()
     }
 
-    private fun batteryColorForLevel(level: Int): Int {
-        return when {
-            charging -> 0xFF34C759.toInt()
-            powerSaveEnabled -> 0xFFFFCC0A.toInt()
-            level > CRITICAL_LEVEL -> fillColor
-            level >= 0 -> 0xFFFF0000.toInt()
-            else -> getColorForLevel(level)
-        }
-    }
-
-    private fun getColorForLevel(level: Int): Int {
-        var thresh: Int
-        var color = 0
-        var i = 0
-        while (i < colorLevels.size) {
-            thresh = colorLevels[i]
-            color = colorLevels[i + 1]
-            if (level <= thresh) {
-                return if (i == colorLevels.size - 2) fillColor else color
-            }
-            i += 2
-        }
-        return color
-    }
-
     override fun setAlpha(alpha: Int) { drawableAlpha = alpha; invalidateSelf() }
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
@@ -253,7 +203,6 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         fillPaint.color = fillColor
         dualToneBackgroundFill.color = 0xFFB1B1B1.toInt()
         dualToneBackgroundFill.alpha = 255
-        levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
     }
 
@@ -273,7 +222,6 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     }
 
     companion object {
-        private const val CRITICAL_LEVEL = 15
         private const val GLYPH_SIZE_FRACTION = 0.65f
         private const val GLYPH_GAP_FRACTION = 0.12f
     }
