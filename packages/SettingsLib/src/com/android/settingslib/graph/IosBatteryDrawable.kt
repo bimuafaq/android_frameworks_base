@@ -23,9 +23,10 @@ import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import com.android.settingslib.R
 import com.android.settingslib.Utils
+import kotlin.math.ceil
 import kotlin.math.floor
 
-class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
+class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawable(), Drawable.Callback {
 
     private val perimeterPath = Path()
     private val scaledPerimeter = Path()
@@ -38,6 +39,9 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
 
     private val buttonPath = Path()
     private val scaledButton = Path()
+
+    private val chargingDrawable = context.getDrawable(R.drawable.battery_unified_attr_charging)
+    private val powerSaveDrawable = context.getDrawable(R.drawable.battery_unified_attr_powersave)
 
     private var intrinsicHeight: Int
     private var intrinsicWidth: Int
@@ -128,6 +132,11 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         levels.recycle()
         colors.recycle()
 
+        chargingDrawable?.callback = this
+        powerSaveDrawable?.callback = this
+        chargingDrawable?.setTint(fillColor)
+        powerSaveDrawable?.setTint(fillColor)
+
         loadPaths()
     }
 
@@ -172,6 +181,12 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         levelRect.right = floor(fillRight)
         levelPath.addRect(levelRect, Path.Direction.CCW)
 
+        val attribution = when {
+            powerSaveEnabled -> powerSaveDrawable
+            charging -> chargingDrawable
+            else -> null
+        }
+
         val cx = fillRect.centerX()
         val cy = fillRect.centerY()
 
@@ -185,7 +200,9 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         // Background (track) with text subtracted
         val backgroundPath = Path()
         backgroundPath.addPath(scaledPerimeter)
-        backgroundPath.addPath(scaledButton)
+        if (attribution == null) {
+            backgroundPath.addPath(scaledButton)
+        }
         backgroundPath.op(textPath, Path.Op.DIFFERENCE)
         c.drawPath(backgroundPath, dualToneBackgroundFill)
 
@@ -197,6 +214,11 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
 
         fillPaint.color = levelColor
         c.drawPath(fillDrawPath, fillPaint)
+
+        if (attribution != null) {
+            attribution.bounds = attrBounds(attribution)
+            attribution.draw(c)
+        }
 
         c.restore()
     }
@@ -232,11 +254,17 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         fillPaint.colorFilter = colorFilter
         dualToneBackgroundFill.colorFilter = colorFilter
         textPaint.colorFilter = colorFilter
+        chargingDrawable?.colorFilter = colorFilter
+        powerSaveDrawable?.colorFilter = colorFilter
     }
 
     override fun getOpacity(): Int = PixelFormat.OPAQUE
     override fun getIntrinsicHeight(): Int = intrinsicHeight
     override fun getIntrinsicWidth(): Int = intrinsicWidth
+
+    override fun invalidateDrawable(who: Drawable) = invalidateSelf()
+    override fun scheduleDrawable(who: Drawable, what: Runnable, `when`: Long) = scheduleSelf(what, `when`)
+    override fun unscheduleDrawable(who: Drawable, what: Runnable) = unscheduleSelf(what)
 
     override fun onBoundsChange(bounds: Rect) {
         super.onBoundsChange(bounds)
@@ -247,6 +275,8 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         val fillColor = if (dualTone) fgColor else singleToneColor
         this.fillColor = fillColor
         fillPaint.color = fillColor
+        chargingDrawable?.setTint(fillColor)
+        powerSaveDrawable?.setTint(fillColor)
         dualToneBackgroundFill.color = bgColor
         dualToneBackgroundFill.alpha = 255
         levelColor = batteryColorForLevel(batteryLevel)
@@ -289,7 +319,40 @@ class IosBatteryDrawable(private val context: Context, frameColor: Int) : Drawab
         perimeterPath.computeBounds(fillRect, true)
     }
 
+    fun hasAttribution(): Boolean = powerSaveEnabled || charging
+
+    fun getAttributionExtraWidth(heightPx: Int): Int {
+        val d = when {
+            powerSaveEnabled -> powerSaveDrawable
+            charging -> chargingDrawable
+            else -> return 0
+        } ?: return 0
+        return ceil(ATTR_VISIBLE_FRACTION * attrGlyphWidth(d, heightPx.toFloat())).toInt()
+    }
+
+    private fun attrGlyphWidth(d: Drawable, heightPx: Float): Float {
+        val ih = d.intrinsicHeight
+        val ratio = if (ih > 0) d.intrinsicWidth / ih.toFloat() else 1f
+        return heightPx * ATTR_HEIGHT_FRACTION * ratio
+    }
+
+    private fun attrBounds(d: Drawable): Rect {
+        val glyphH = bounds.height() * ATTR_HEIGHT_FRACTION
+        val glyphW = attrGlyphWidth(d, bounds.height().toFloat())
+        val left = fillRect.right - ATTR_OVERLAP * glyphW
+        val top = fillRect.centerY() - glyphH / 2f
+        return Rect(
+            floor(left).toInt(),
+            floor(top).toInt(),
+            ceil(left + glyphW).toInt(),
+            ceil(top + glyphH).toInt()
+        )
+    }
+
     companion object {
         private const val CRITICAL_LEVEL = 15
+        private const val ATTR_HEIGHT_FRACTION = 9f / 13f
+        private const val ATTR_OVERLAP = 0.2f
+        private const val ATTR_VISIBLE_FRACTION = 0.8f
     }
 }

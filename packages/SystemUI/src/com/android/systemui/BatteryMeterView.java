@@ -366,6 +366,9 @@ public class BatteryMeterView extends LinearLayout implements
         if (pluggedIn) {
             updateShowPercent();
         }
+        if (mBatteryStyle == BATTERY_STYLE_IOS) {
+            scaleBatteryMeterViews();
+        }
     }
 
     @Override
@@ -374,6 +377,9 @@ public class BatteryMeterView extends LinearLayout implements
         mThemedDrawable.setPowerSaveEnabled(isPowerSave);
         mOneUIDrawable.setPowerSaveEnabled(isPowerSave);
         mIosDrawable.setPowerSaveEnabled(isPowerSave);
+        if (mBatteryStyle == BATTERY_STYLE_IOS) {
+            scaleBatteryMeterViews();
+        }
     }
 
     private TextView loadPercentView() {
@@ -536,8 +542,13 @@ public class BatteryMeterView extends LinearLayout implements
             batteryHeight = res.getDimensionPixelSize(R.dimen.status_bar_battery_icon_ios_height);
         }
 
+        int scaledWidth = (int) (batteryWidth * iconScaleFactor);
+        int scaledHeight = (int) (batteryHeight * iconScaleFactor);
+        if (mBatteryStyle == BATTERY_STYLE_IOS && mIosDrawable.hasAttribution()) {
+            scaledWidth += mIosDrawable.getAttributionExtraWidth(scaledHeight);
+        }
         LinearLayout.LayoutParams scaledLayoutParams = new LinearLayout.LayoutParams(
-                (int) (batteryWidth * iconScaleFactor), (int) (batteryHeight * iconScaleFactor));
+                scaledWidth, scaledHeight);
         scaledLayoutParams.setMargins(0, 0, 0, marginBottom);
 
         mBatteryIconView.setLayoutParams(scaledLayoutParams);
