@@ -28,6 +28,11 @@ import android.util.PathParser
 
 enum class BatteryAttributionGlyph(val width: Float, val height: Float, pathData: String) {
     BOLT(
+        8f,
+        9f,
+        "M7.672,3.375L4.302,3.375L5.038,0.563C5.113,0.281 4.91,0 4.633,0C4.515,0 4.398,0.056 4.324,0.146L0.09,5.051C-0.102,5.276 0.047,5.625 0.335,5.625L3.705,5.625L2.969,8.438C2.895,8.719 3.097,9 3.374,9C3.492,9 3.609,8.944 3.684,8.854L7.917,3.949C8.109,3.724 7.96,3.375 7.672,3.375Z"
+    ),
+    SEC_BOLT(
         9f,
         9f,
         "M7.1225,3.8069L3.2436,8.3778C2.9203,8.6657 2.6059,8.3854 2.6956,8.148L4.1969,4.8537C4.2246,4.7779 4.1691,4.6984 4.0895,4.6984L2.2195,4.6984C1.8811,4.6984 1.6576,4.3448 1.8041,4.0393L3.3648,0.7626C3.4405,0.6023 3.6034,0.5 3.7802,0.5L5.2815,0.5C5.6287,0.5 5.851,0.8687 5.6893,1.1755L4.7941,2.8688C4.7524,2.9445 4.808,3.038 4.8951,3.038L6.7803,3.038C7.1793,3.038 7.3889,3.5102 7.1225,3.8069Z"
@@ -63,8 +68,10 @@ object BatteryAttributionRenderer {
     fun path(glyph: BatteryAttributionGlyph, dst: RectF): Path {
         glyph.path.computeBounds(pathBounds, true)
         val scale = minOf(dst.width() / glyph.width, dst.height() / glyph.height)
-        val left = dst.left + (dst.width() - glyph.width * scale) / 2f - pathBounds.left * scale
-        val top = dst.top + (dst.height() - glyph.height * scale) / 2f - pathBounds.top * scale
+        val pathW = (pathBounds.right - pathBounds.left) * scale
+        val pathH = (pathBounds.bottom - pathBounds.top) * scale
+        val left = dst.left + (dst.width() - pathW) / 2f - pathBounds.left * scale
+        val top = dst.top + (dst.height() - pathH) / 2f - pathBounds.top * scale
 
         transformMatrix.setScale(scale, scale)
         transformMatrix.postTranslate(left, top)

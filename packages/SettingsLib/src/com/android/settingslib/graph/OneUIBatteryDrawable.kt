@@ -173,19 +173,26 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         textPaint.textSize = baseTextSize * scaleFactor
 
         val textY = bounds.centerY() - (textPaint.fontMetrics.descent + textPaint.fontMetrics.ascent) / 2
-        val glyphSlot = if (attribution != null) bounds.height().toFloat() else 0f
-        val textX = glyphSlot + (bounds.width() - glyphSlot) * 0.5f
+        val levelText = batteryLevel.toString()
+        val textWidth = if (mShowPercent) textPaint.measureText(levelText) else 0f
+        val glyphSize = if (attribution != null) bounds.height() * GLYPH_SIZE_FRACTION else 0f
+        val glyphGap = if (attribution != null) bounds.height() * GLYPH_GAP_FRACTION else 0f
+        val contentStart = (bounds.width() - glyphSize - glyphGap - textWidth) / 2f
+        val textX = contentStart + glyphSize + glyphGap + textWidth / 2f
 
         textPath.reset()
         if (mShowPercent) {
-            textPaint.getTextPath(
-                batteryLevel.toString(), 0, batteryLevel.toString().length, textX, textY, textPath
-            )
+            textPaint.getTextPath(levelText, 0, levelText.length, textX, textY, textPath)
         }
 
         unifiedPath.op(textPath, Path.Op.DIFFERENCE)
         if (attribution != null) {
-            unifiedPath.op(BatteryAttributionRenderer.path(attribution, attrRect()), Path.Op.DIFFERENCE)
+            val top = (bounds.height() - glyphSize) / 2f
+            unifiedPath.op(
+                BatteryAttributionRenderer.path(
+                    attribution, RectF(contentStart, top, contentStart + glyphSize, top + glyphSize)),
+                Path.Op.DIFFERENCE
+            )
         }
         c.drawPath(unifiedPath, dualToneBackgroundFill)
 
@@ -256,24 +263,18 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
 
     fun hasAttribution(): Boolean = attributionGlyph() != null
 
-    fun getAttributionExtraWidth(heightPx: Int): Int = heightPx
+    fun getAttributionExtraWidth(heightPx: Int): Int =
+        (heightPx * (GLYPH_SIZE_FRACTION + GLYPH_GAP_FRACTION)).toInt()
 
     private fun attributionGlyph(): BatteryAttributionGlyph? = when {
         powerSaveEnabled -> BatteryAttributionGlyph.LEAF
-        charging -> BatteryAttributionGlyph.BOLT
+        charging -> BatteryAttributionGlyph.SEC_BOLT
         else -> null
-    }
-
-    private fun attrRect(): RectF {
-        val slot = bounds.height().toFloat()
-        val size = slot * GLYPH_SIZE_FRACTION
-        val left = (slot - size) / 2f
-        val top = (bounds.height() - size) / 2f
-        return RectF(left, top, left + size, top + size)
     }
 
     companion object {
         private const val CRITICAL_LEVEL = 15
-        private const val GLYPH_SIZE_FRACTION = 0.6f
+        private const val GLYPH_SIZE_FRACTION = 0.65f
+        private const val GLYPH_GAP_FRACTION = 0.12f
     }
 }
