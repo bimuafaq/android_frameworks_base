@@ -50,6 +50,8 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     private var levelColor: Int = Color.WHITE
     private var batteryLevel = 0
 
+    private val dualTone = true
+
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).also { p ->
         p.color = frameColor
         p.style = Paint.Style.FILL_AND_STROKE
@@ -237,9 +239,10 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     }
 
     fun setColors(fgColor: Int, bgColor: Int, singleToneColor: Int) {
-        fillColor = fgColor
+        val fillColor = if (dualTone) fgColor else singleToneColor
+        this.fillColor = fillColor
         fillPaint.color = fillColor
-        dualToneBackgroundFill.color = 0xFFB1B1B1.toInt()
+        dualToneBackgroundFill.color = bgColor
         dualToneBackgroundFill.alpha = 255
         levelColor = batteryColorForLevel(batteryLevel)
         invalidateSelf()
