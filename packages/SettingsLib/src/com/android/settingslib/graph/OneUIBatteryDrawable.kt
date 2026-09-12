@@ -27,15 +27,12 @@ import kotlin.math.floor
 
 class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Drawable() {
 
-    private val perimeterPath = Path()
-    private val scaledPerimeter = Path()
     private val fillRect = RectF()
     private val levelRect = RectF()
     private val levelPath = Path()
     private val textPath = Path()
     private val unifiedPath = Path()
     private val alphaPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val scaleMatrix = Matrix()
 
     private var intrinsicHeight: Int
     private var intrinsicWidth: Int
@@ -121,8 +118,6 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         }
         levels.recycle()
         colors.recycle()
-
-        loadPaths()
     }
 
     fun setCharging(active: Boolean) {
@@ -155,7 +150,14 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         if (batteryLevel == -1) return
         alphaPaint.alpha = drawableAlpha
         c.saveLayer(null, alphaPaint)
+
+        val attribution = attributionGlyph()
+
         unifiedPath.reset()
+        fillRect.set(bounds)
+        val radius = baseRadius * bounds.height() / baseHeight
+        unifiedPath.addRoundRect(fillRect, radius, radius, Path.Direction.CW)
+
         levelPath.reset()
         levelRect.set(fillRect)
 
@@ -165,14 +167,14 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
 
         levelRect.right = floor(fillTop)
         levelPath.addRect(levelRect, Path.Direction.CCW)
-        unifiedPath.addPath(scaledPerimeter)
         fillPaint.color = levelColor
 
         val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
         textPaint.textSize = baseTextSize * scaleFactor
 
         val textY = bounds.centerY() - (textPaint.fontMetrics.descent + textPaint.fontMetrics.ascent) / 2
-        val textX = bounds.width() * 0.5f
+        val glyphSlot = if (attribution != null) bounds.height().toFloat() else 0f
+        val textX = glyphSlot + (bounds.width() - glyphSlot) * 0.5f
 
         textPath.reset()
         if (mShowPercent) {
@@ -182,6 +184,9 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         }
 
         unifiedPath.op(textPath, Path.Op.DIFFERENCE)
+        if (attribution != null) {
+            unifiedPath.op(BatteryAttributionRenderer.path(attribution, attrRect()), Path.Op.DIFFERENCE)
+        }
         c.drawPath(unifiedPath, dualToneBackgroundFill)
 
         c.save()
@@ -246,22 +251,29 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     }
 
     private fun updateSize() {
-        val b = bounds
-        scaleMatrix.setScale(
-            if (b.isEmpty) 1f else b.right / baseWidth,
-            if (b.isEmpty) 1f else b.bottom / baseHeight
-        )
-        perimeterPath.transform(scaleMatrix, scaledPerimeter)
-        scaledPerimeter.computeBounds(fillRect, true)
+        fillRect.set(bounds)
     }
 
-    private fun loadPaths() {
-        val radius = baseRadius
-        perimeterPath.addRoundRect(RectF(0f, 0f, baseWidth, baseHeight), radius, radius, Path.Direction.CW)
-        scaledPerimeter.computeBounds(fillRect, true)
+    fun hasAttribution(): Boolean = attributionGlyph() != null
+
+    fun getAttributionExtraWidth(heightPx: Int): Int = heightPx
+
+    private fun attributionGlyph(): BatteryAttributionGlyph? = when {
+        powerSaveEnabled -> BatteryAttributionGlyph.LEAF
+        charging -> BatteryAttributionGlyph.BOLT
+        else -> null
+    }
+
+    private fun attrRect(): RectF {
+        val slot = bounds.height().toFloat()
+        val size = slot * GLYPH_SIZE_FRACTION
+        val left = (slot - size) / 2f
+        val top = (bounds.height() - size) / 2f
+        return RectF(left, top, left + size, top + size)
     }
 
     companion object {
         private const val CRITICAL_LEVEL = 15
+        private const val GLYPH_SIZE_FRACTION = 0.6f
     }
 }

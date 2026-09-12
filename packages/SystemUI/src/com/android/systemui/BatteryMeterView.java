@@ -366,7 +366,7 @@ public class BatteryMeterView extends LinearLayout implements
         if (pluggedIn) {
             updateShowPercent();
         }
-        if (mBatteryStyle == BATTERY_STYLE_IOS) {
+        if (mBatteryStyle == BATTERY_STYLE_IOS || mBatteryStyle == BATTERY_STYLE_ONEUI) {
             scaleBatteryMeterViews();
         }
     }
@@ -377,7 +377,7 @@ public class BatteryMeterView extends LinearLayout implements
         mThemedDrawable.setPowerSaveEnabled(isPowerSave);
         mOneUIDrawable.setPowerSaveEnabled(isPowerSave);
         mIosDrawable.setPowerSaveEnabled(isPowerSave);
-        if (mBatteryStyle == BATTERY_STYLE_IOS) {
+        if (mBatteryStyle == BATTERY_STYLE_IOS || mBatteryStyle == BATTERY_STYLE_ONEUI) {
             scaleBatteryMeterViews();
         }
     }
@@ -546,6 +546,8 @@ public class BatteryMeterView extends LinearLayout implements
         int scaledHeight = (int) (batteryHeight * iconScaleFactor);
         if (mBatteryStyle == BATTERY_STYLE_IOS && mIosDrawable.hasAttribution()) {
             scaledWidth += mIosDrawable.getAttributionExtraWidth(scaledHeight);
+        } else if (mBatteryStyle == BATTERY_STYLE_ONEUI && mOneUIDrawable.hasAttribution()) {
+            scaledWidth += mOneUIDrawable.getAttributionExtraWidth(scaledHeight);
         }
         LinearLayout.LayoutParams scaledLayoutParams = new LinearLayout.LayoutParams(
                 scaledWidth, scaledHeight);
@@ -555,8 +557,13 @@ public class BatteryMeterView extends LinearLayout implements
     }
 
     private void updateBatteryStyle() {
-        mBatteryIconView.setScaleType(mBatteryStyle == BATTERY_STYLE_IOS
-                ? ImageView.ScaleType.FIT_START : ImageView.ScaleType.FIT_CENTER);
+        ImageView.ScaleType scaleType = ImageView.ScaleType.FIT_CENTER;
+        if (mBatteryStyle == BATTERY_STYLE_IOS) {
+            scaleType = ImageView.ScaleType.FIT_START;
+        } else if (mBatteryStyle == BATTERY_STYLE_ONEUI) {
+            scaleType = ImageView.ScaleType.FIT_XY;
+        }
+        mBatteryIconView.setScaleType(scaleType);
         switch (mBatteryStyle) {
             case BATTERY_STYLE_PORTRAIT:
                 mBatteryIconView.setImageDrawable(mThemedDrawable);
