@@ -15,30 +15,9 @@
    limitations under the License.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:height="24dp"
-    android:viewportHeight="24"
-    android:viewportWidth="24"
-    android:width="24dp" >
-    <group
-        android:translateX="4.000000"
-        android:translateY="3.000000" >
-        <path
-            android:fillAlpha="0.3"
-            android:fillColor="@android:color/white"
-            android:pathData="M16,18 L14.5,18 L14.5,0.75 C14.5053858,0.338037936 14.8380379,0.00538581231 15.25,0 L15.25,0 C15.6619621,0.00538581231 15.9946142,0.338037936 16,0.75 L16,18 Z"
-            android:strokeAlpha="0.3"
-            android:strokeWidth="1" />
-        <path
-            android:fillColor="@android:color/white"
-            android:pathData="M11.33,18 L9.83,18 L9.83,5.75 C9.83538581,5.33803794 10.1680379,5.00538581 10.58,5 L10.58,5 C10.9942136,5 11.33,5.33578644 11.33,5.75 L11.33,18 Z"
-            android:strokeWidth="1" />
-        <path
-            android:fillColor="@android:color/white"
-            android:pathData="M6.67,18 L5.17,18 L5.17,10.75 C5.17,10.3357864 5.50578644,10 5.92,10 L5.92,10 C6.33196206,10.0053858 6.66461419,10.3380379 6.67,10.75 L6.67,18 Z"
-            android:strokeWidth="1" />
-        <path
-            android:fillColor="@android:color/white"
-            android:pathData="M2,18 L0.5,18 L0.5,15.75 C0.505385812,15.3380379 0.838037936,15.0053858 1.25,15 L1.25,15 C1.66196206,15.0053858 1.99461419,15.3380379 2,15.75 L2,18 Z"
-            android:strokeWidth="1" />
-    </group>
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="16.0" android:viewportHeight="15.0">
+
+    <path android:fillColor="#ffffffff" android:pathData="M12.5,1.872C12.132,1.872 11.833,2.171 11.833,2.539v9.964c0,0.368 0.299,0.667 0.667,0.667 0.367,0 0.667,-0.299 0.667,-0.667L13.167,2.539c0,-0.369 -0.3,-0.667 -0.667,-0.667z" android:fillAlpha="0.396" android:fillType="nonZero" />
+    <path android:fillColor="#ffffffff" android:pathData="M6.5,7.538c0.368,0 0.667,0.299 0.667,0.667v4.298c0,0.368 -0.299,0.667 -0.667,0.667 -0.369,0 -0.667,-0.299 -0.667,-0.667L5.833,8.205c0,-0.368 0.298,-0.667 0.667,-0.667zM3.5,10.538c0.368,0 0.667,0.299 0.667,0.667v1.298c0,0.368 -0.299,0.667 -0.667,0.667 -0.369,0 -0.667,-0.299 -0.667,-0.667L2.833,11.205c0,-0.368 0.298,-0.667 0.667,-0.667zM9.5,4.539c0.367,0 0.667,0.298 0.667,0.666v7.298c0,0.368 -0.3,0.667 -0.667,0.667 -0.368,0 -0.667,-0.299 -0.667,-0.666L8.833,5.206c0,-0.369 0.299,-0.667 0.667,-0.667z" android:fillType="nonZero" />
 </vector>

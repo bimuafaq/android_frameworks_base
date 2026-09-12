@@ -15,23 +15,8 @@
    limitations under the License.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:height="24dp"
-    android:viewportHeight="24"
-    android:viewportWidth="24"
-    android:width="24dp" >
-    <path
-        android:fillColor="@android:color/white"
-        android:pathData="M20,4.75C20,4.34,19.66,4,19.25,4S18.5,4.34,18.5,4.75V22H20V4.75z" />
-    <path
-        android:fillColor="@android:color/white"
-        android:pathData="M15.75,8C15.34,8,15,8.34,15,8.75V22h1.5V8.75C16.5,8.34,16.16,8,15.75,8z" />
-    <path
-        android:fillColor="@android:color/white"
-        android:pathData="M12.25,12c-0.41,0-0.75,0.34-0.75,0.75V22H13v-9.25C13,12.34,12.66,12,12.25,12z" />
-    <path
-        android:fillColor="@android:color/white"
-        android:pathData="M8.75,15C8.34,15,8,15.34,8,15.75V22h1.5v-6.25C9.5,15.34,9.16,15,8.75,15z" />
-    <path
-        android:fillColor="@android:color/white"
-        android:pathData="M5.25,19c-0.41,0-0.75,0.34-0.75,0.75V22H6v-2.25C6,19.34,5.66,19,5.25,19z" />
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="16.0" android:viewportHeight="15.0">
+
+    <path android:fillColor="#ffffffff" android:pathData="M8,6.1529c0.368,0 0.667,0.299 0.667,0.666v5.633c0,0.369 -0.299,0.667 -0.667,0.667 -0.369,0 -0.667,-0.298 -0.667,-0.667L7.333,6.8199c0,-0.368 0.298,-0.667 0.667,-0.667zM5.75,8.4859c0.368,0 0.667,0.299 0.667,0.667v3.298c0,0.369 -0.299,0.667 -0.667,0.667 -0.369,0 -0.667,-0.298 -0.667,-0.667L5.083,9.1529c0,-0.368 0.298,-0.667 0.667,-0.667zM3.5,10.4859c0.368,0 0.667,0.299 0.667,0.667v1.298c0,0.369 -0.299,0.667 -0.667,0.667 -0.369,0 -0.667,-0.298 -0.667,-0.667v-1.298c0,-0.368 0.298,-0.667 0.667,-0.667zM12.5,1.8189c0.368,0 0.667,0.299 0.667,0.667v9.965c0,0.369 -0.299,0.667 -0.667,0.667 -0.368,0 -0.667,-0.298 -0.667,-0.667L11.833,2.4859c0,-0.368 0.299,-0.667 0.667,-0.667zM10.25,3.8189c0.368,0 0.667,0.299 0.667,0.667v7.965c0,0.369 -0.299,0.667 -0.667,0.667 -0.368,0 -0.667,-0.298 -0.667,-0.667L9.583,4.4859c0,-0.368 0.299,-0.667 0.667,-0.667z" android:fillType="nonZero" />
 </vector>
