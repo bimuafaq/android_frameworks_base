@@ -151,7 +151,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         val levelText = batteryLevel.toString()
         val textWidth = if (mShowPercent) textPaint.measureText(levelText) else 0f
         val glyphSize = if (attribution != null) bounds.height() * GLYPH_SIZE_FRACTION else 0f
-        val glyphGap = if (attribution != null) bounds.height() * GLYPH_GAP_FRACTION else 0f
+        val glyphGap = if (attribution != null) bounds.height() * gapFor(attribution) else 0f
         val contentStart = (bounds.width() - glyphSize - glyphGap - textWidth) / 2f
         val textX = contentStart + glyphSize + glyphGap + textWidth / 2f
 
@@ -212,8 +212,15 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
 
     fun hasAttribution(): Boolean = attributionGlyph() != null
 
-    fun getAttributionExtraWidth(heightPx: Int): Int =
-        (heightPx * (GLYPH_SIZE_FRACTION + GLYPH_GAP_FRACTION)).toInt()
+    fun getAttributionExtraWidth(heightPx: Int): Int {
+        val g = attributionGlyph() ?: return 0
+        return (heightPx * (GLYPH_SIZE_FRACTION + gapFor(g))).toInt()
+    }
+
+    private fun gapFor(glyph: BatteryAttributionGlyph): Float = when (glyph) {
+        BatteryAttributionGlyph.SEC_BOLT -> CHARGING_GAP_FRACTION
+        else -> GLYPH_GAP_FRACTION
+    }
 
     private fun attributionGlyph(): BatteryAttributionGlyph? = when {
         powerSaveEnabled -> BatteryAttributionGlyph.LEAF
@@ -224,5 +231,6 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
     companion object {
         private const val GLYPH_SIZE_FRACTION = 0.65f
         private const val GLYPH_GAP_FRACTION = 0.12f
+        private const val CHARGING_GAP_FRACTION = 0.06f
     }
 }
