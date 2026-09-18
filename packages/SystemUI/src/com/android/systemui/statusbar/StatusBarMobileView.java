@@ -24,8 +24,12 @@ import static com.android.systemui.statusbar.StatusBarIconView.STATE_ICON;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.UserHandle;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -40,6 +44,10 @@ import com.android.systemui.DualToneHandler;
 import com.android.systemui.R;
 import com.android.systemui.plugins.DarkIconDispatcher.DarkReceiver;
 import com.android.systemui.statusbar.phone.StatusBarSignalPolicy.MobileIconState;
+import com.android.systemui.statusbar.policy.MobileDataActivityController;
+import com.android.systemui.statusbar.policy.CombinedTelephonyIcons;
+
+import lineageos.providers.LineageSettings;
 
 public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         StatusIconDisplayable {
@@ -57,8 +65,13 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
     private ImageView mOut;
     private ImageView mMobile, mMobileType, mMobileRoaming;
     private View mMobileRoamingSpace;
+    private View mMobileTypeContainer;
+    private ImageView mDataActivity; // Combined overlay
+    private MobileDataActivityController mActivityController;
+    private int mLastTint = 0;
     private int mVisibleState = -1;
     private DualToneHandler mDualToneHandler;
+    private boolean mUseCombined;
 
     public static StatusBarMobileView fromContext(Context context, String slot) {
         LayoutInflater inflater = LayoutInflater.from(context);
@@ -99,6 +112,8 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         outRect.bottom += translationY;
     }
 
+    private boolean mStyleObserverRegistered = false;
+
     private void init() {
         mDualToneHandler = new DualToneHandler(getContext());
         mMobileGroup = findViewById(R.id.mobile_group);
@@ -109,12 +124,60 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mIn = findViewById(R.id.mobile_in);
         mOut = findViewById(R.id.mobile_out);
         mInoutContainer = findViewById(R.id.inout_container);
+        mMobileTypeContainer = findViewById(R.id.mobile_type_container);
+        mDataActivity = findViewById(R.id.data_activity);
 
         mMobileDrawable = new SignalDrawable(getContext());
-        mMobile.setImageDrawable(mMobileDrawable);
+        if (mMobile != null) mMobile.setImageDrawable(mMobileDrawable);
+
+        if (mDataActivity != null) {
+            mActivityController = new MobileDataActivityController(mDataActivity);
+        }
+        registerStyleObserver();
 
         initDotView();
     }
+
+    private void registerStyleObserver() {
+        if (mStyleObserverRegistered) return;
+        try {
+            mUseCombined = CombinedTelephonyIcons.isCombinedStyle(getContext());
+            getContext().getContentResolver().registerContentObserver(
+                    LineageSettings.Secure.getUriFor(
+                            LineageSettings.Secure.MOBILE_DATA_ICON_STYLE),
+                    false, mStyleObserver, UserHandle.USER_ALL);
+            mStyleObserverRegistered = true;
+        } catch (Exception e) {
+            // provider not ready / no permission — fallback OFF, no leak
+            mUseCombined = false;
+        }
+    }
+
+    private void unregisterStyleObserver() {
+        if (!mStyleObserverRegistered) return;
+        try {
+            getContext().getContentResolver().unregisterContentObserver(mStyleObserver);
+        } catch (Exception ignored) {}
+        mStyleObserverRegistered = false;
+    }
+
+    private final ContentObserver mStyleObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+        @Override public void onChange(boolean selfChange) {
+            boolean now;
+            try {
+                now = CombinedTelephonyIcons.isCombinedStyle(getContext());
+            } catch (Exception e) {
+                now = false;
+            }
+            if (now != mUseCombined) {
+                mUseCombined = now;
+                if (mState != null) {
+                    initViewState();
+                    requestLayout();
+                }
+            }
+        }
+    };
 
     private void initDotView() {
         mDotView = new StatusBarIconView(mContext, mSlot, null);
@@ -146,57 +209,116 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
     }
 
     private void initViewState() {
+        if (mState == null) return;
         setContentDescription(mState.contentDescription);
-        if (!mState.visible) {
-            mMobileGroup.setVisibility(View.GONE);
-        } else {
-            mMobileGroup.setVisibility(View.VISIBLE);
+        if (mMobileGroup != null) {
+            mMobileGroup.setVisibility(mState.visible ? View.VISIBLE : View.GONE);
         }
-        mMobileDrawable.setLevel(mState.strengthId);
+        if (mUseCombined && !mState.visible && mActivityController != null) {
+            mActivityController.stop();
+        }
+        if (mMobileDrawable != null) mMobileDrawable.setLevel(mState.strengthId);
         if (mState.typeId > 0) {
-            mMobileType.setContentDescription(mState.typeContentDescription);
-            mMobileType.setImageResource(mState.typeId);
-            mMobileType.setVisibility(View.VISIBLE);
+            if (mMobileType != null) {
+                mMobileType.setContentDescription(mState.typeContentDescription);
+                mMobileType.setImageResource(mState.typeId);
+                mMobileType.setVisibility(View.VISIBLE);
+            }
+            if (mMobileTypeContainer != null) mMobileTypeContainer.setVisibility(View.VISIBLE);
         } else {
-            mMobileType.setVisibility(View.GONE);
+            if (mMobileType != null) mMobileType.setVisibility(View.GONE);
+            if (mMobileTypeContainer != null) mMobileTypeContainer.setVisibility(View.GONE);
         }
 
-        mMobileRoaming.setVisibility(mState.roaming ? View.VISIBLE : View.GONE);
-        mMobileRoamingSpace.setVisibility(mState.roaming ? View.VISIBLE : View.GONE);
-        mIn.setVisibility(mState.activityIn ? View.VISIBLE : View.GONE);
-        mOut.setVisibility(mState.activityOut ? View.VISIBLE : View.GONE);
-        mInoutContainer.setVisibility((mState.activityIn || mState.activityOut)
-                ? View.VISIBLE : View.GONE);
+        if (mMobileRoaming != null) mMobileRoaming.setVisibility(mState.roaming ? View.VISIBLE : View.GONE);
+        if (mMobileRoamingSpace != null) mMobileRoamingSpace.setVisibility(mState.roaming ? View.VISIBLE : View.GONE);
+        if (mUseCombined) {
+            // Combined: TrafficStats polling like NetworkTraffic — not PhoneStateListener state
+            if (mDataActivity != null && mState.typeId != 0 && mState.visible) {
+                mDataActivity.setVisibility(View.VISIBLE);
+                if (mActivityController != null) {
+                    mActivityController.setTint(mLastTint);
+                    mActivityController.start();
+                }
+            } else if (mDataActivity != null) {
+                mDataActivity.setVisibility(View.GONE);
+                if (mActivityController != null) mActivityController.stop();
+            }
+            if (mIn != null) mIn.setVisibility(View.GONE);
+            if (mOut != null) mOut.setVisibility(View.GONE);
+            if (mInoutContainer != null) mInoutContainer.setVisibility(View.GONE);
+        } else {
+            if (mDataActivity != null) {
+                mDataActivity.setVisibility(View.GONE);
+                if (mActivityController != null) mActivityController.stop();
+            }
+            if (mIn != null) mIn.setVisibility(mState.activityIn ? View.VISIBLE : View.GONE);
+            if (mOut != null) mOut.setVisibility(mState.activityOut ? View.VISIBLE : View.GONE);
+            if (mInoutContainer != null) {
+                mInoutContainer.setVisibility((mState.activityIn || mState.activityOut)
+                        ? View.VISIBLE : View.GONE);
+            }
+        }
     }
 
     private boolean updateState(MobileIconState state) {
+        if (state == null || mState == null) return false;
         boolean needsLayout = false;
 
         setContentDescription(state.contentDescription);
-        if (mState.visible != state.visible) {
+        if (mMobileGroup != null && mState.visible != state.visible) {
             mMobileGroup.setVisibility(state.visible ? View.VISIBLE : View.GONE);
             needsLayout = true;
         }
-        if (mState.strengthId != state.strengthId) {
+        if (!state.visible && mUseCombined && mActivityController != null) {
+            mActivityController.stop();
+        }
+        if (mMobileDrawable != null && mState.strengthId != state.strengthId) {
             mMobileDrawable.setLevel(state.strengthId);
         }
         if (mState.typeId != state.typeId) {
             needsLayout |= state.typeId == 0 || mState.typeId == 0;
             if (state.typeId != 0) {
-                mMobileType.setContentDescription(state.typeContentDescription);
-                mMobileType.setImageResource(state.typeId);
-                mMobileType.setVisibility(View.VISIBLE);
+                if (mMobileType != null) {
+                    mMobileType.setContentDescription(state.typeContentDescription);
+                    mMobileType.setImageResource(state.typeId);
+                    mMobileType.setVisibility(View.VISIBLE);
+                }
+                if (mMobileTypeContainer != null) mMobileTypeContainer.setVisibility(View.VISIBLE);
             } else {
-                mMobileType.setVisibility(View.GONE);
+                if (mMobileType != null) mMobileType.setVisibility(View.GONE);
+                if (mMobileTypeContainer != null) mMobileTypeContainer.setVisibility(View.GONE);
             }
         }
 
-        mMobileRoaming.setVisibility(state.roaming ? View.VISIBLE : View.GONE);
-        mMobileRoamingSpace.setVisibility(state.roaming ? View.VISIBLE : View.GONE);
-        mIn.setVisibility(state.activityIn ? View.VISIBLE : View.GONE);
-        mOut.setVisibility(state.activityOut ? View.VISIBLE : View.GONE);
-        mInoutContainer.setVisibility((state.activityIn || state.activityOut)
-                ? View.VISIBLE : View.GONE);
+        if (mMobileRoaming != null) mMobileRoaming.setVisibility(state.roaming ? View.VISIBLE : View.GONE);
+        if (mMobileRoamingSpace != null) mMobileRoamingSpace.setVisibility(state.roaming ? View.VISIBLE : View.GONE);
+        if (mUseCombined) {
+            if (mDataActivity != null && state.typeId != 0 && state.visible) {
+                mDataActivity.setVisibility(View.VISIBLE);
+                if (mActivityController != null) {
+                    mActivityController.setTint(mLastTint);
+                    mActivityController.start();
+                }
+            } else if (mDataActivity != null) {
+                mDataActivity.setVisibility(View.GONE);
+                if (mActivityController != null) mActivityController.stop();
+            }
+            if (mIn != null) mIn.setVisibility(View.GONE);
+            if (mOut != null) mOut.setVisibility(View.GONE);
+            if (mInoutContainer != null) mInoutContainer.setVisibility(View.GONE);
+        } else {
+            if (mDataActivity != null) {
+                mDataActivity.setVisibility(View.GONE);
+                if (mActivityController != null) mActivityController.stop();
+            }
+            if (mIn != null) mIn.setVisibility(state.activityIn ? View.VISIBLE : View.GONE);
+            if (mOut != null) mOut.setVisibility(state.activityOut ? View.VISIBLE : View.GONE);
+            if (mInoutContainer != null) {
+                mInoutContainer.setVisibility((state.activityIn || state.activityOut)
+                        ? View.VISIBLE : View.GONE);
+            }
+        }
 
         needsLayout |= state.roaming != mState.roaming
                 || state.activityIn != mState.activityIn
@@ -207,14 +329,40 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        registerStyleObserver();
+        if (mUseCombined && mDataActivity != null && mState != null
+                && mState.typeId != 0 && mState.visible && mActivityController != null) {
+            mActivityController.start();
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (mActivityController != null) mActivityController.stop();
+        // keep observer for reattach — status bar toggles visibility, not destroy
+        super.onDetachedFromWindow();
+    }
+
+    /** Called when view is permanently removed (e.g. slot removed). Prevents observer leak. */
+    public void destroy() {
+        if (mActivityController != null) mActivityController.destroy();
+        unregisterStyleObserver();
+    }
+
+    @Override
     public void onDarkChanged(Rect area, float darkIntensity, int tint) {
         float intensity = isInArea(area, this) ? darkIntensity : 0;
         mMobileDrawable.setTintList(
                 ColorStateList.valueOf(mDualToneHandler.getSingleColor(intensity)));
         ColorStateList color = ColorStateList.valueOf(getTint(area, this, tint));
+        mLastTint = getTint(area, this, tint);
+        if (mActivityController != null) mActivityController.setTint(mLastTint);
         mIn.setImageTintList(color);
         mOut.setImageTintList(color);
         mMobileType.setImageTintList(color);
+        if (mDataActivity != null) mDataActivity.setImageTintList(color);
         mMobileRoaming.setImageTintList(color);
         mDotView.setDecorColor(tint);
         mDotView.setIconColor(tint, false);
@@ -233,6 +381,8 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
     public void setStaticDrawableColor(int color) {
         ColorStateList list = ColorStateList.valueOf(color);
         float intensity = color == Color.WHITE ? 0 : 1;
+        mLastTint = color;
+        if (mActivityController != null) mActivityController.setTint(color);
         // We want the ability to change the theme from the one set by SignalDrawable in certain
         // surfaces. In this way, we can pass a theme to the view.
         mMobileDrawable.setTintList(
@@ -240,6 +390,7 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mIn.setImageTintList(list);
         mOut.setImageTintList(list);
         mMobileType.setImageTintList(list);
+        if (mDataActivity != null) mDataActivity.setImageTintList(list);
         mMobileRoaming.setImageTintList(list);
         mDotView.setDecorColor(color);
     }
