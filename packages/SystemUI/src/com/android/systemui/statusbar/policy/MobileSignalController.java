@@ -21,6 +21,7 @@ import android.database.ContentObserver;
 import android.net.NetworkCapabilities;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.UserHandle;
 import android.provider.Settings.Global;
 import android.telephony.Annotation;
 import android.telephony.CdmaEriInformation;
@@ -36,6 +37,8 @@ import android.telephony.TelephonyManager;
 import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
+
+import lineageos.providers.LineageSettings;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.settingslib.Utils;
@@ -84,6 +87,7 @@ public class MobileSignalController extends SignalController<
     private Config mConfig;
     @VisibleForTesting
     boolean mInflateSignalStrengths = false;
+    private final ContentObserver mStyleObserver;
 
     // TODO: Reduce number of vars passed in, if we have the NetworkController, probably don't
     // need listener lists anymore.
@@ -121,6 +125,17 @@ public class MobileSignalController extends SignalController<
                 updateTelephony();
             }
         };
+        mStyleObserver = new ContentObserver(new Handler(receiverLooper)) {
+            @Override
+            public void onChange(boolean selfChange) {
+                mapIconSets();
+                updateTelephony();
+            }
+        };
+        mContext.getContentResolver().registerContentObserver(
+                LineageSettings.Secure.getUriFor(
+                        LineageSettings.Secure.MOBILE_DATA_ICON_STYLE),
+                false, mStyleObserver, UserHandle.USER_ALL);
     }
 
     public void setConfiguration(Config config) {
@@ -180,6 +195,16 @@ public class MobileSignalController extends SignalController<
     public void unregisterListener() {
         mPhone.listen(mPhoneStateListener, 0);
         mContext.getContentResolver().unregisterContentObserver(mObserver);
+        mContext.getContentResolver().unregisterContentObserver(mStyleObserver);
+    }
+
+    private boolean isCombined() {
+        try {
+            return LineageSettings.Secure.getIntForUser(mContext.getContentResolver(),
+                    LineageSettings.Secure.MOBILE_DATA_ICON_STYLE, 0, UserHandle.USER_CURRENT) == 1;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -188,56 +213,57 @@ public class MobileSignalController extends SignalController<
      */
     private void mapIconSets() {
         mNetworkToIconLookup.clear();
+        boolean combined = isCombined();
 
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_EVDO_0),
-                TelephonyIcons.THREE_G);
+                combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_EVDO_A),
-                TelephonyIcons.THREE_G);
+                combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_EVDO_B),
-                TelephonyIcons.THREE_G);
+                combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_EHRPD),
-                TelephonyIcons.THREE_G);
+                combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
         if (mConfig.show4gFor3g) {
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_UMTS),
-                TelephonyIcons.FOUR_G);
+                combined ? CombinedTelephonyIcons.FOUR_G : TelephonyIcons.FOUR_G);
         } else {
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_UMTS),
-                TelephonyIcons.THREE_G);
+                combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
         }
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_TD_SCDMA),
-                TelephonyIcons.THREE_G);
+                combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
 
         if (!mConfig.showAtLeast3G) {
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_UNKNOWN),
-                    TelephonyIcons.UNKNOWN);
+                    combined ? CombinedTelephonyIcons.UNKNOWN : TelephonyIcons.UNKNOWN);
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_EDGE),
-                    TelephonyIcons.E);
+                    combined ? CombinedTelephonyIcons.E : TelephonyIcons.E);
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_CDMA),
-                    TelephonyIcons.ONE_X);
+                    combined ? CombinedTelephonyIcons.ONE_X : TelephonyIcons.ONE_X);
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_1xRTT),
-                    TelephonyIcons.ONE_X);
+                    combined ? CombinedTelephonyIcons.ONE_X : TelephonyIcons.ONE_X);
 
-            mDefaultIcons = TelephonyIcons.G;
+            mDefaultIcons = combined ? CombinedTelephonyIcons.G : TelephonyIcons.G;
         } else {
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_UNKNOWN),
-                    TelephonyIcons.THREE_G);
+                    combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_EDGE),
-                    TelephonyIcons.THREE_G);
+                    combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_CDMA),
-                    TelephonyIcons.THREE_G);
+                    combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
             mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_1xRTT),
-                    TelephonyIcons.THREE_G);
-            mDefaultIcons = TelephonyIcons.THREE_G;
+                    combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G);
+            mDefaultIcons = combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G;
         }
 
-        MobileIconGroup hGroup = TelephonyIcons.THREE_G;
-        MobileIconGroup hPlusGroup = TelephonyIcons.THREE_G;
+        MobileIconGroup hGroup = combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G;
+        MobileIconGroup hPlusGroup = combined ? CombinedTelephonyIcons.THREE_G : TelephonyIcons.THREE_G;
         if (mConfig.show4gFor3g) {
-            hGroup = TelephonyIcons.FOUR_G;
-            hPlusGroup = TelephonyIcons.FOUR_G;
+            hGroup = combined ? CombinedTelephonyIcons.FOUR_G : TelephonyIcons.FOUR_G;
+            hPlusGroup = combined ? CombinedTelephonyIcons.FOUR_G : TelephonyIcons.FOUR_G;
         } else if (mConfig.hspaDataDistinguishable) {
-            hGroup = TelephonyIcons.H;
-            hPlusGroup = TelephonyIcons.H_PLUS;
+            hGroup = combined ? CombinedTelephonyIcons.H : TelephonyIcons.H;
+            hPlusGroup = combined ? CombinedTelephonyIcons.H_PLUS : TelephonyIcons.H_PLUS;
         }
 
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_HSDPA), hGroup);
@@ -248,45 +274,45 @@ public class MobileSignalController extends SignalController<
         if (mConfig.show4gForLte) {
             mNetworkToIconLookup.put(toIconKey(
                     TelephonyManager.NETWORK_TYPE_LTE),
-                    TelephonyIcons.FOUR_G);
+                    combined ? CombinedTelephonyIcons.FOUR_G : TelephonyIcons.FOUR_G);
             if (mConfig.hideLtePlus) {
                 mNetworkToIconLookup.put(toDisplayIconKey(
                         TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA),
-                        TelephonyIcons.FOUR_G);
+                        combined ? CombinedTelephonyIcons.FOUR_G : TelephonyIcons.FOUR_G);
             } else {
                 mNetworkToIconLookup.put(toDisplayIconKey(
                         TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA),
-                        TelephonyIcons.FOUR_G_PLUS);
+                        combined ? CombinedTelephonyIcons.FOUR_G_PLUS : TelephonyIcons.FOUR_G_PLUS);
             }
         } else {
             mNetworkToIconLookup.put(toIconKey(
                     TelephonyManager.NETWORK_TYPE_LTE),
-                    TelephonyIcons.LTE);
+                    combined ? CombinedTelephonyIcons.LTE : TelephonyIcons.LTE);
             if (mConfig.hideLtePlus) {
                 mNetworkToIconLookup.put(toDisplayIconKey(
                         TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA),
-                        TelephonyIcons.LTE);
+                        combined ? CombinedTelephonyIcons.LTE : TelephonyIcons.LTE);
             } else {
                 mNetworkToIconLookup.put(toDisplayIconKey(
                         TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA),
-                        TelephonyIcons.LTE_PLUS);
+                        combined ? CombinedTelephonyIcons.LTE_PLUS : TelephonyIcons.LTE_PLUS);
             }
         }
         mNetworkToIconLookup.put(toIconKey(
                 TelephonyManager.NETWORK_TYPE_IWLAN),
-                TelephonyIcons.WFC);
+                combined ? CombinedTelephonyIcons.WFC : TelephonyIcons.WFC);
         mNetworkToIconLookup.put(toDisplayIconKey(
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO),
-                TelephonyIcons.LTE_CA_5G_E);
+                combined ? CombinedTelephonyIcons.LTE_CA_5G_E : TelephonyIcons.LTE_CA_5G_E);
         mNetworkToIconLookup.put(toDisplayIconKey(
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA),
-                TelephonyIcons.NR_5G);
+                combined ? CombinedTelephonyIcons.NR_5G : TelephonyIcons.NR_5G);
         mNetworkToIconLookup.put(toDisplayIconKey(
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE),
-                TelephonyIcons.NR_5G_PLUS);
+                combined ? CombinedTelephonyIcons.NR_5G_PLUS : TelephonyIcons.NR_5G_PLUS);
         mNetworkToIconLookup.put(toIconKey(
                 TelephonyManager.NETWORK_TYPE_NR),
-                TelephonyIcons.NR_5G);
+                combined ? CombinedTelephonyIcons.NR_5G : TelephonyIcons.NR_5G);
     }
 
     private String getIconKey() {
@@ -331,17 +357,20 @@ public class MobileSignalController extends SignalController<
 
     @Override
     public int getCurrentIconId() {
-        if (mCurrentState.iconGroup == TelephonyIcons.CARRIER_NETWORK_CHANGE) {
+        boolean isCombinedCarrier = isCombined() && mCurrentState.iconGroup == CombinedTelephonyIcons.CARRIER_NETWORK_CHANGE;
+        if (mCurrentState.iconGroup == TelephonyIcons.CARRIER_NETWORK_CHANGE || isCombinedCarrier) {
             return SignalDrawable.getCarrierChangeState(getNumLevels());
         } else if (mCurrentState.connected) {
             int level = mCurrentState.level;
             if (mInflateSignalStrengths) {
                 level++;
             }
+            boolean isDisabled = mCurrentState.iconGroup == TelephonyIcons.DATA_DISABLED
+                    || mCurrentState.iconGroup == CombinedTelephonyIcons.DATA_DISABLED;
+            boolean isNotDefault = mCurrentState.iconGroup == TelephonyIcons.NOT_DEFAULT_DATA
+                    || mCurrentState.iconGroup == CombinedTelephonyIcons.NOT_DEFAULT_DATA;
             boolean dataDisabled = mCurrentState.userSetup
-                    && (mCurrentState.iconGroup == TelephonyIcons.DATA_DISABLED
-                    || (mCurrentState.iconGroup == TelephonyIcons.NOT_DEFAULT_DATA
-                            && mCurrentState.defaultDataOff));
+                    && (isDisabled || (isNotDefault && mCurrentState.defaultDataOff));
             boolean noInternet = mCurrentState.inetCondition == 0;
             boolean cutOut = dataDisabled || noInternet;
             return SignalDrawable.getState(level, getNumLevels(), cutOut);
@@ -372,8 +401,11 @@ public class MobileSignalController extends SignalController<
         if (mCurrentState.inetCondition == 0) {
             dataContentDescription = mContext.getString(R.string.data_connection_no_internet);
         }
-        final boolean dataDisabled = (mCurrentState.iconGroup == TelephonyIcons.DATA_DISABLED
-                || (mCurrentState.iconGroup == TelephonyIcons.NOT_DEFAULT_DATA))
+        final boolean isDisabled = mCurrentState.iconGroup == TelephonyIcons.DATA_DISABLED
+                || mCurrentState.iconGroup == CombinedTelephonyIcons.DATA_DISABLED;
+        final boolean isNotDefault = mCurrentState.iconGroup == TelephonyIcons.NOT_DEFAULT_DATA
+                || mCurrentState.iconGroup == CombinedTelephonyIcons.NOT_DEFAULT_DATA;
+        final boolean dataDisabled = (isDisabled || isNotDefault)
                 && mCurrentState.userSetup;
 
         // Show icon in QS when we are connected or data is disabled.
@@ -556,12 +588,16 @@ public class MobileSignalController extends SignalController<
 
         mCurrentState.roaming = isRoaming();
         if (isCarrierNetworkChangeActive()) {
-            mCurrentState.iconGroup = TelephonyIcons.CARRIER_NETWORK_CHANGE;
+            mCurrentState.iconGroup = isCombined()
+                    ? CombinedTelephonyIcons.CARRIER_NETWORK_CHANGE
+                    : TelephonyIcons.CARRIER_NETWORK_CHANGE;
         } else if (isDataDisabled() && !mConfig.alwaysShowDataRatIcon) {
             if (mSubscriptionInfo.getSubscriptionId() != mDefaults.getDefaultDataSubId()) {
-                mCurrentState.iconGroup = TelephonyIcons.NOT_DEFAULT_DATA;
+                mCurrentState.iconGroup = isCombined()
+                        ? CombinedTelephonyIcons.NOT_DEFAULT_DATA : TelephonyIcons.NOT_DEFAULT_DATA;
             } else {
-                mCurrentState.iconGroup = TelephonyIcons.DATA_DISABLED;
+                mCurrentState.iconGroup = isCombined()
+                        ? CombinedTelephonyIcons.DATA_DISABLED : TelephonyIcons.DATA_DISABLED;
             }
         }
         if (isEmergencyOnly() != mCurrentState.isEmergency) {
@@ -587,7 +623,9 @@ public class MobileSignalController extends SignalController<
      * If we are controlling the NOT_DEFAULT_DATA icon, check the status of the other one
      */
     private void checkDefaultData() {
-        if (mCurrentState.iconGroup != TelephonyIcons.NOT_DEFAULT_DATA) {
+        boolean isNotDefault = mCurrentState.iconGroup == TelephonyIcons.NOT_DEFAULT_DATA
+                || mCurrentState.iconGroup == CombinedTelephonyIcons.NOT_DEFAULT_DATA;
+        if (!isNotDefault) {
             mCurrentState.defaultDataOff = false;
             return;
         }
