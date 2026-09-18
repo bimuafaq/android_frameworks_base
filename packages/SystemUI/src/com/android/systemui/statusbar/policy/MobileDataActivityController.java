@@ -36,7 +36,8 @@ import java.lang.ref.WeakReference;
  * 1:1 from NetworkTraffic: REFRESH_INTERVAL/JITTER/SPEED_THRESHOLD/BITS_PER_BYTE/KILO/Handler WeakReference
  * tapi MOBILE ONLY — tidak iterate LinkProperties + tether seperti NetworkTraffic.
  * Layout not touched — only net activity.
- * 3-icon mode: none/in/out (balanced -> none)
+ * 4-icon mode: none/in/out/inout — inout when both directions active and balanced
+ * (aligns with TelephonyManager.DATA_ACTIVITY_INOUT=3).
  */
 public class MobileDataActivityController {
 
@@ -121,11 +122,20 @@ public class MobileDataActivityController {
         ImageView target = mTargetRef.get();
         if (target == null || target.getContext() == null) return;
         int res;
-        long total = mTxKbps + mRxKbps;
-        if (total <= SPEED_THRESHOLD_KBPS) res = R.drawable.stat_sys_data_no_inout;
-        else if (mTxKbps > (mRxKbps + SPEED_THRESHOLD_KBPS)) res = R.drawable.stat_sys_data_out;
-        else if (mRxKbps > (mTxKbps + SPEED_THRESHOLD_KBPS)) res = R.drawable.stat_sys_data_in;
-        else res = R.drawable.stat_sys_data_no_inout;
+        boolean txActive = mTxKbps > SPEED_THRESHOLD_KBPS;
+        boolean rxActive = mRxKbps > SPEED_THRESHOLD_KBPS;
+        if (!txActive && !rxActive) {
+            res = R.drawable.stat_sys_data_no_inout;
+        } else if (txActive && rxActive) {
+            // Both directions active: dominant -> single, balanced -> inout (DATA_ACTIVITY_INOUT)
+            if (mTxKbps > (mRxKbps + SPEED_THRESHOLD_KBPS)) res = R.drawable.stat_sys_data_out;
+            else if (mRxKbps > (mTxKbps + SPEED_THRESHOLD_KBPS)) res = R.drawable.stat_sys_data_in;
+            else res = R.drawable.stat_sys_data_inout;
+        } else if (txActive) {
+            res = R.drawable.stat_sys_data_out;
+        } else {
+            res = R.drawable.stat_sys_data_in;
+        }
         if (res != mCurrentRes) {
             try {
                 target.setImageResource(res);
