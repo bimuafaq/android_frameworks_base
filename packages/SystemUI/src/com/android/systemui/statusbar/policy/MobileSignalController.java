@@ -136,6 +136,10 @@ public class MobileSignalController extends SignalController<
                 LineageSettings.Secure.getUriFor(
                         LineageSettings.Secure.MOBILE_DATA_ICON_STYLE),
                 false, mStyleObserver, UserHandle.USER_ALL);
+        mContext.getContentResolver().registerContentObserver(
+                LineageSettings.Secure.getUriFor(
+                        LineageSettings.Secure.SHOW_FOURG),
+                false, mStyleObserver, UserHandle.USER_ALL);
     }
 
     public void setConfiguration(Config config) {
@@ -207,6 +211,15 @@ public class MobileSignalController extends SignalController<
         }
     }
 
+    private boolean isShowFourGEnabled() {
+        try {
+            return LineageSettings.Secure.getIntForUser(mContext.getContentResolver(),
+                    LineageSettings.Secure.SHOW_FOURG, 0, UserHandle.USER_CURRENT) == 1;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /**
      * Produce a mapping of data network types to icon groups for simple and quick use in
      * updateTelephony.
@@ -271,7 +284,8 @@ public class MobileSignalController extends SignalController<
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_HSPA), hGroup);
         mNetworkToIconLookup.put(toIconKey(TelephonyManager.NETWORK_TYPE_HSPAP), hPlusGroup);
 
-        if (mConfig.show4gForLte) {
+        boolean showFourGForLte = mConfig.show4gForLte || isShowFourGEnabled();
+        if (showFourGForLte) {
             mNetworkToIconLookup.put(toIconKey(
                     TelephonyManager.NETWORK_TYPE_LTE),
                     combined ? CombinedTelephonyIcons.FOUR_G : TelephonyIcons.FOUR_G);
