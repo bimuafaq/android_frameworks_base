@@ -27,13 +27,15 @@ import com.android.systemui.Dependency;
 import com.android.systemui.plugins.DarkIconDispatcher;
 import com.android.systemui.plugins.DarkIconDispatcher.DarkReceiver;
 import com.android.systemui.R;
+import com.android.systemui.statusbar.StatusBarIconView;
+import com.android.systemui.statusbar.StatusIconDisplayable;
 
 import org.lineageos.internal.statusbar.LineageStatusBarItem;
 
 import java.util.ArrayList;
 
 public class LineageStatusBarItemHolder extends RelativeLayout
-        implements LineageStatusBarItem.Manager {
+        implements LineageStatusBarItem.Manager, StatusIconDisplayable {
     private static final String TAG = "LineageStatusBarItemHolder";
 
     private ArrayList<LineageStatusBarItem.DarkReceiver> mDarkReceivers =
@@ -146,5 +148,22 @@ public class LineageStatusBarItemHolder extends RelativeLayout
     public void addVisibilityReceiver(LineageStatusBarItem.VisibilityReceiver visibilityReceiver) {
         mVisibilityReceivers.add(visibilityReceiver);
         visibilityReceiver.onVisibilityChanged(mItemHolderIsVisible);
+    }
+
+    // ---- StatusIconDisplayable: slot "network_traffic" after "ethernet" ----
+    private int mVisibleState = StatusBarIconView.STATE_ICON;
+    @Override public String getSlot() { return "network_traffic"; }
+    @Override public boolean isIconVisible() {
+        View t = findViewById(R.id.network_traffic);
+        if (t != null) return t.getVisibility() == VISIBLE;
+        return false;
+    }
+    @Override public boolean isIconBlocked() { return false; }
+    @Override public int getVisibleState() { return mVisibleState; }
+    @Override public void setVisibleState(int s, boolean a) { mVisibleState = s; }
+    @Override public void setStaticDrawableColor(int c) {}
+    @Override public void setDecorColor(int c) {}
+    @Override public void onDarkChanged(Rect area, float darkIntensity, int tint) {
+        mDarkReceiver.onDarkChanged(area, darkIntensity, tint);
     }
 }

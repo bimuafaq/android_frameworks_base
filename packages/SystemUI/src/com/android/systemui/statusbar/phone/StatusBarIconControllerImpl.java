@@ -72,6 +72,8 @@ public class StatusBarIconControllerImpl extends StatusBarIconList implements Tu
     public StatusBarIconControllerImpl(Context context, CommandQueue commandQueue) {
         super(context.getResources().getStringArray(
                 com.android.internal.R.array.config_statusBarIcons));
+        // Hardcode: zen - ethernet - network_traffic - wifi - hotspot - mobile (no core/config change)
+        insertSlotAfter("ethernet", "network_traffic");
         Dependency.get(ConfigurationController.class).addCallback(this);
 
         mContext = context;

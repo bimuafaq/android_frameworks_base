@@ -19,6 +19,7 @@ import static android.app.StatusBarManager.DISABLE_NONE;
 
 import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_ICON;
 import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_MOBILE;
+import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_NETWORK_TRAFFIC;
 import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_WIFI;
 
 import android.content.Context;
@@ -260,6 +261,9 @@ public interface StatusBarIconController {
 
                 case TYPE_MOBILE:
                     return addMobileIcon(index, slot, holder.getMobileState());
+
+                case TYPE_NETWORK_TRAFFIC:
+                    return addNetworkTraffic(index);
             }
 
             return null;
@@ -310,6 +314,22 @@ public interface StatusBarIconController {
         private StatusBarMobileView onCreateStatusBarMobileView(String slot) {
             StatusBarMobileView view = StatusBarMobileView.fromContext(mContext, slot);
             return view;
+        }
+
+        private StatusIconDisplayable addNetworkTraffic(int index) {
+            com.android.systemui.statusbar.LineageStatusBarItemHolder holder =
+                    new com.android.systemui.statusbar.LineageStatusBarItemHolder(mContext);
+            org.lineageos.internal.statusbar.NetworkTraffic traffic =
+                    new org.lineageos.internal.statusbar.NetworkTraffic(mContext);
+            traffic.setId(com.android.systemui.R.id.network_traffic);
+            android.widget.RelativeLayout.LayoutParams lp =
+                    new android.widget.RelativeLayout.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT);
+            lp.addRule(android.widget.RelativeLayout.CENTER_IN_PARENT, android.widget.RelativeLayout.TRUE);
+            holder.addView(traffic, lp);
+            mGroup.addView(holder, index, onCreateLayoutParams());
+            return holder;
         }
 
         protected LinearLayout.LayoutParams onCreateLayoutParams() {
@@ -368,6 +388,9 @@ public interface StatusBarIconController {
 
                 case TYPE_MOBILE:
                     onSetMobileIcon(viewIndex, holder.getMobileState());
+                    return;
+                case TYPE_NETWORK_TRAFFIC:
+                    return;
                 default:
                     break;
             }

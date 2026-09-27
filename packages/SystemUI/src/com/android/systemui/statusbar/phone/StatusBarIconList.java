@@ -50,6 +50,36 @@ public class StatusBarIconList {
         return 0;
     }
 
+    /**
+     * Hardcode: insert newSlot right after anchor without touching core/res/config.xml
+     */
+    protected void insertSlotAfter(String anchorSlot, String newSlot) {
+        int anchorIdx = -1;
+        int existingIdx = -1;
+        for (int i = 0; i < mSlots.size(); i++) {
+            String name = mSlots.get(i).getName();
+            if (name.equals(anchorSlot)) anchorIdx = i;
+            if (name.equals(newSlot)) existingIdx = i;
+        }
+        if (existingIdx != -1) {
+            // Already exists — reorder after anchor
+            Slot s = mSlots.remove(existingIdx);
+            // Re-find anchor after remove shift
+            anchorIdx = -1;
+            for (int i = 0; i < mSlots.size(); i++) {
+                if (mSlots.get(i).getName().equals(anchorSlot)) { anchorIdx = i; break; }
+            }
+            if (anchorIdx != -1) mSlots.add(anchorIdx + 1, s);
+            else mSlots.add(s);
+            return;
+        }
+        if (anchorIdx != -1) {
+            mSlots.add(anchorIdx + 1, new Slot(newSlot, null));
+        } else {
+            mSlots.add(new Slot(newSlot, null));
+        }
+    }
+
     protected ArrayList<Slot> getSlots() {
         return new ArrayList<>(mSlots);
     }

@@ -20,8 +20,12 @@ import static android.app.StatusBarManager.DISABLE_SYSTEM_INFO;
 
 import android.annotation.Nullable;
 import android.app.Fragment;
+import android.content.ContentResolver;
+import android.database.ContentObserver;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Parcelable;
+import android.os.UserHandle;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,9 +33,13 @@ import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.LinearLayout;
 
+import lineageos.providers.LineageSettings;
+
 import com.android.systemui.Dependency;
 import com.android.systemui.Interpolators;
 import com.android.systemui.R;
+import com.android.systemui.statusbar.phone.StatusBarIconControllerImpl;
+import com.android.systemui.statusbar.phone.StatusBarIconHolder;
 import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.StatusBarState;
@@ -63,6 +71,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     private View mNotificationIconAreaInner;
     private View mNetworkTrafficHolder;
     private View mCenteredIconArea;
+    private ContentObserver mNetworkTrafficObserver;
+    private boolean mNetworkTrafficAsStatusIcon;
     private int mDisabled1;
     private StatusBar mStatusBarComponent;
     private DarkIconManager mDarkIconManager;
@@ -109,6 +119,13 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         Dependency.get(StatusBarIconController.class).addIconGroup(mDarkIconManager);
         mSystemIconArea = mStatusBar.findViewById(R.id.system_icon_area);
         mNetworkTrafficHolder = mStatusBar.findViewById(R.id.network_traffic_holder);
+        mNetworkTrafficObserver = new ContentObserver(new Handler(getContext().getMainLooper())) {
+            @Override public void onChange(boolean selfChange) { updateNetworkTrafficLocation(); }
+        };
+        getContext().getContentResolver().registerContentObserver(
+                LineageSettings.Secure.getUriFor(LineageSettings.Secure.NETWORK_TRAFFIC_AS_STATUS_ICON),
+                false, mNetworkTrafficObserver, UserHandle.USER_ALL);
+        updateNetworkTrafficLocation();
         mClockController = new ClockController(getContext(), mStatusBar);
         showSystemIconArea(false);
         showClock(false);
@@ -141,6 +158,10 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (mNetworkTrafficObserver != null) {
+            getContext().getContentResolver().unregisterContentObserver(mNetworkTrafficObserver);
+            mNetworkTrafficObserver = null;
+        }
         Dependency.get(StatusBarIconController.class).removeIconGroup(mDarkIconManager);
         if (mNetworkController.hasEmergencyCryptKeeperText()) {
             mNetworkController.removeCallback(mSignalCallback);
@@ -268,13 +289,13 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     }
 
     public void hideSystemIconArea(boolean animate) {
-        animateHide(mSystemIconArea, animate);
-        animateHide(mNetworkTrafficHolder, animate);
+        if (mSystemIconArea != null) animateHide(mSystemIconArea, animate);
+        if (!mNetworkTrafficAsStatusIcon && mNetworkTrafficHolder != null) animateHide(mNetworkTrafficHolder, animate);
     }
 
     public void showSystemIconArea(boolean animate) {
-        animateShow(mSystemIconArea, animate);
-        animateShow(mNetworkTrafficHolder, animate);
+        if (mSystemIconArea != null) animateShow(mSystemIconArea, animate);
+        if (!mNetworkTrafficAsStatusIcon && mNetworkTrafficHolder != null) animateShow(mNetworkTrafficHolder, animate);
     }
 
     public void hideClock(boolean animate) {
@@ -405,5 +426,37 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     @Override
     public void onDozingChanged(boolean isDozing) {
         disable(getContext().getDisplayId(), mDisabled1, mDisabled1, false /* animate */);
+    }
+
+    private void updateNetworkTrafficLocation() {
+        if (getContext() == null || mNetworkTrafficHolder == null) return;
+        boolean asIcon;
+        try {
+            asIcon = LineageSettings.Secure.getIntForUser(getContext().getContentResolver(),
+                    LineageSettings.Secure.NETWORK_TRAFFIC_AS_STATUS_ICON, 0, UserHandle.USER_CURRENT) != 0;
+        } catch (Exception e) { return; }
+        if (asIcon == mNetworkTrafficAsStatusIcon) return;
+        mNetworkTrafficAsStatusIcon = asIcon;
+        StatusBarIconController iconController;
+        try { iconController = Dependency.get(StatusBarIconController.class); } catch (Exception e) { return; }
+        if (iconController == null) return;
+        if (asIcon) {
+            mNetworkTrafficHolder.animate().cancel();
+            mNetworkTrafficHolder.setAlpha(0f);
+            mNetworkTrafficHolder.setVisibility(View.GONE);
+            try {
+                int idx = ((StatusBarIconControllerImpl) iconController).getSlotIndex("network_traffic");
+                ((StatusBarIconControllerImpl) iconController).setIcon(idx, StatusBarIconHolder.fromNetworkTraffic());
+            } catch (Exception ignored) {}
+        } else {
+            try { iconController.removeAllIconsForSlot("network_traffic"); } catch (Exception ignored) {}
+            mNetworkTrafficHolder.setAlpha(1f);
+            if (mSystemIconArea != null && mSystemIconArea.getVisibility() == View.VISIBLE) {
+                mNetworkTrafficHolder.setVisibility(View.VISIBLE);
+            } else {
+                // Defer visibility until system area is shown; avoid NPE when detached
+                mNetworkTrafficHolder.setVisibility(View.VISIBLE);
+            }
+        }
     }
 }
