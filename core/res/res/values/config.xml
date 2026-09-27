@@ -55,6 +55,7 @@
         <item><xliff:g id="id">@string/status_bar_volume</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_zen</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_ethernet</xliff:g></item>
+        <item><xliff:g id="id">@string/status_bar_network_traffic</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_wifi</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_hotspot</xliff:g></item>
         <item><xliff:g id="id">@string/status_bar_mobile</xliff:g></item>
@@ -80,6 +81,7 @@
     <string translatable="false" name="status_bar_mute">mute</string>
     <string translatable="false" name="status_bar_volume">volume</string>
     <string translatable="false" name="status_bar_wifi">wifi</string>
+    <string translatable="false" name="status_bar_network_traffic">network_traffic</string>
     <string translatable="false" name="status_bar_cdma_eri">cdma_eri</string>
     <string translatable="false" name="status_bar_data_connection">data_connection</string>
     <string translatable="false" name="status_bar_phone_evdo_signal">phone_evdo_signal</string>
