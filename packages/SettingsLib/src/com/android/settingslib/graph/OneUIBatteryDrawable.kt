@@ -142,7 +142,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
 
         levelRect.right = floor(fillTop)
         levelPath.addRect(levelRect, Path.Direction.CCW)
-        fillPaint.color = fillColor
+        fillPaint.color = if (batteryLevel >= 0 && batteryLevel <= 15) 0xFFFF0000.toInt() else fillColor
 
         val scaleFactor = if (baseHeight > 0) bounds.height() / baseHeight else 1f
         textPaint.textSize = baseTextSize * scaleFactor
