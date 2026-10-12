@@ -66,7 +66,6 @@ import com.android.systemui.util.wakelock.SettableWakeLock;
 import com.android.systemui.util.wakelock.WakeLock;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileReader;
 import java.io.PrintWriter;
@@ -882,15 +881,11 @@ public class KeyguardIndicationController implements StateListener,
     }
 
     private int readBatteryCurrentFromFile() {
-        try {
-            File file = new File("/sys/class/power_supply/battery/current_now");
-            if (file.exists()) {
-                BufferedReader br = new BufferedReader(new FileReader(file));
-                String line = br.readLine();
-                br.close();
-                if (line != null) {
-                    return Math.abs(Integer.parseInt(line.trim()));
-                }
+        try (BufferedReader br = new BufferedReader(
+                new FileReader("/sys/class/power_supply/battery/current_now"))) {
+            String line = br.readLine();
+            if (line != null) {
+                return Math.abs(Integer.parseInt(line.trim()));
             }
         } catch (Exception e) {
         }
@@ -908,21 +903,19 @@ public class KeyguardIndicationController implements StateListener,
             int voltageMv = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
             float voltageV = voltageMv / 1000f;
 
-            int rawCurrent = 0;
-            int fileCurrent = readBatteryCurrentFromFile();
-            if (fileCurrent > 0) {
-                rawCurrent = fileCurrent;
-            } else {
+            int rawCurrent = readBatteryCurrentFromFile();
+            if (rawCurrent <= 0) {
                 BatteryManager bm = (BatteryManager) mContext.getSystemService(Context.BATTERY_SERVICE);
                 if (bm != null) {
-                    rawCurrent = Math.abs(bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW));
+                    int prop = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                    if (prop != Integer.MIN_VALUE && prop != 0) {
+                        rawCurrent = Math.abs(prop);
+                    }
                 }
             }
 
-            int currentmA = rawCurrent;            
-            if (rawCurrent > 10000) {
-                currentmA = rawCurrent / 1000;
-            }
+            // current_now / API may be µA or mA depending on kernel
+            int currentmA = rawCurrent > 10000 ? rawCurrent / 1000 : rawCurrent;
 
             float wattage = (currentmA / 1000f) * voltageV;
 
