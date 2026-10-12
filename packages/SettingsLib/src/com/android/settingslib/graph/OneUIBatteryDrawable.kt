@@ -180,6 +180,7 @@ class OneUIBatteryDrawable(private val context: Context, frameColor: Int) : Draw
         )
         c.drawPath(unifiedPath, fillPaint)
         c.restore()
+        c.restore()
     }
 
     override fun setAlpha(alpha: Int) { drawableAlpha = alpha; invalidateSelf() }
